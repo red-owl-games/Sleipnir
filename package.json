@@ -1,0 +1,17 @@
+{
+    "name": "com.redowl.sleipnir",
+    "version": "1.0.0",
+    "displayName": "RedOwl - Sleipnir",
+    "description": "A unity graph editor framework for unity that works with odin inspector",
+    "unity": "2019.4",
+   "keywords": [
+      "graph",
+      "editor",
+      "framework"
+    ],
+    "author": {
+      "name": "Red Owl Games",
+      "email": "support@redowlgames.com",
+      "url": "https://redowlgames.com"
+    }
+  }
