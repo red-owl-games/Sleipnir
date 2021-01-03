@@ -14,13 +14,13 @@ namespace RedOwl.Sleipnir.Editor
         public VisualElement FlowOutPortContainer { get; private set; }
         public INode Model => (INode) userData;
 
-        public SleipnirNodeView(INode node)
+        public SleipnirNodeView(INode node, IEdgeConnectorListener listener)
         {
             userData = node;
-            Initialize(node);
+            Initialize(node, listener);
         }
 
-        private void Initialize(INode node)
+        private void Initialize(INode node, IEdgeConnectorListener listener)
         {
             name = node.NodeId;
             title = node.NodeTitle;
@@ -35,9 +35,9 @@ namespace RedOwl.Sleipnir.Editor
 
             CreateBody(node);
             CreateFlowPortContainers();
-            if (node is IFlowNode flowNode) CreateFlowPorts(flowNode);
+            if (node is IFlowNode flowNode) CreateFlowPorts(flowNode, listener);
             AttachFlowPortContainers();
-            CreateValuePorts(node);
+            CreateValuePorts(node, listener);
             RefreshExpandedState();
             RefreshPorts();
         }
@@ -53,25 +53,25 @@ namespace RedOwl.Sleipnir.Editor
 #endif
         }
         
-        private PortView CreatePortView(IPort valuePort, Orientation orientation)
+        private PortView CreatePortView(IPort valuePort, Orientation orientation, IEdgeConnectorListener listener)
         {
-            var view = PortView.Create<Edge>(orientation, ConvertDirection(valuePort.Direction), ConvertCapacity(valuePort.Capacity), valuePort.ValueType);
+            var view = new SleipnirPortView(orientation, valuePort.Direction, valuePort.Capacity, valuePort.ValueType, listener);
             view.name = valuePort.Id.Port;
             view.userData = valuePort;
             view.portName = valuePort.Name;
             return view;
         }
         
-        private void CreateValuePorts(INode node)
+        private void CreateValuePorts(INode node, IEdgeConnectorListener listener)
         {
             foreach (var valuePort in node.ValueInPorts.Values)
             {
-                inputContainer.Add(CreatePortView(valuePort, Orientation.Horizontal));
+                inputContainer.Add(CreatePortView(valuePort, Orientation.Horizontal, listener));
             }
             
             foreach (var valuePort in node.ValueOutPorts.Values)
             {
-                outputContainer.Add(CreatePortView(valuePort, Orientation.Horizontal));
+                outputContainer.Add(CreatePortView(valuePort, Orientation.Horizontal, listener));
             }
         }
 
@@ -83,16 +83,16 @@ namespace RedOwl.Sleipnir.Editor
             FlowOutPortContainer.AddToClassList("FlowOutPorts");
         }
 
-        private void CreateFlowPorts(IFlowNode node)
+        private void CreateFlowPorts(IFlowNode node, IEdgeConnectorListener listener)
         {
             foreach (var flowPort in node.FlowInPorts.Values)
             {
-                FlowInPortContainer.Add(CreatePortView(flowPort, Orientation.Vertical));
+                FlowInPortContainer.Add(CreatePortView(flowPort, Orientation.Vertical, listener));
             }
             
             foreach (var flowPort in node.FlowOutPorts.Values)
             {
-                FlowOutPortContainer.Add(CreatePortView(flowPort, Orientation.Vertical));
+                FlowOutPortContainer.Add(CreatePortView(flowPort, Orientation.Vertical, listener));
             }
         }
 
@@ -101,9 +101,6 @@ namespace RedOwl.Sleipnir.Editor
             if (FlowInPortContainer.childCount > 0) mainContainer.parent.Insert(0, FlowInPortContainer);
             if (FlowOutPortContainer.childCount > 0) mainContainer.parent.Add(FlowOutPortContainer);
         }
-
-        private Direction ConvertDirection(PortDirection value) => value == PortDirection.Input ? Direction.Input : Direction.Output;
-        private PortView.Capacity ConvertCapacity(PortCapacity value) => value == PortCapacity.Single ? PortView.Capacity.Single : PortView.Capacity.Multi;
     }
     
     public static class NodeViewExtensions

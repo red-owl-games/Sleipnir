@@ -19,7 +19,8 @@ namespace RedOwl.Sleipnir.Editor
         public IGraph Graph => _graph;
         
         private MiniMap _map;
-        private UIXGraphSearchProvider _search;
+        private SleipnirGraphSearchProvider _search;
+        private IEdgeConnectorListener _edgeConnectorListener;
 
         public SleipnirGraphView(GraphAsset asset)
         {
@@ -47,6 +48,7 @@ namespace RedOwl.Sleipnir.Editor
             this.AddManipulator(new RectangleSelector());
             graphViewChanged = OnGraphViewChanged;
 
+            _edgeConnectorListener = new SleipnirGraphEdgeConnectorListener(this);
             CreateGridBackground();
             CreateMiniMap();
             CreateSearch();
@@ -70,7 +72,7 @@ namespace RedOwl.Sleipnir.Editor
 
         private void CreateSearch()
         {
-            _search = ScriptableObject.CreateInstance<UIXGraphSearchProvider>();
+            _search = ScriptableObject.CreateInstance<SleipnirGraphSearchProvider>();
             _search.Initialize(this);
             nodeCreationRequest = ctx => SearchWindow.Open(new SearchWindowContext(ctx.screenMousePosition), _search);
         }
@@ -221,7 +223,7 @@ namespace RedOwl.Sleipnir.Editor
         private Dictionary<string, SleipnirNodeView> _nodeViewCache;
         private void CreateNodeView<T>(T node) where T : INode
         {
-            var element = new SleipnirNodeView(node);
+            var element = new SleipnirNodeView(node, _edgeConnectorListener);
             _nodeViewCache.Add(node.NodeId, element);
             AddElement(element);
         }
@@ -233,6 +235,11 @@ namespace RedOwl.Sleipnir.Editor
             AssetDatabase.SaveAssets();
         }
 
+        public void OpenSearch(Vector2 screenPosition, PortView port = null)
+        {
+            //_search.SourcePort = connectedPort;
+            SearchWindow.Open(new SearchWindowContext(screenPosition), _search);
+        }
         
         /*
         public void Clean()

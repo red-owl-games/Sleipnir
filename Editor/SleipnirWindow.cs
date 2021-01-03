@@ -26,6 +26,10 @@ namespace RedOwl.Sleipnir.Editor
 
         public static SleipnirWindow GetOrCreate()
         {
+            // TODO: Support Multi Window
+            // TODO: Is there a way to "find" the window with the current asset and just focus it?
+            // var window = CreateInstance<SleipnirWindow>();
+            // window.Show();
             var window = GetWindow<SleipnirWindow>();
             window.titleContent = new GUIContent("Graph Editor");
             return window;

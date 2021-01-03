@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using RedOwl.Sleipnir.Engine;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
@@ -39,7 +38,7 @@ namespace RedOwl.Sleipnir.Editor
         }
     }
     
-    public class UIXGraphSearchProvider : ScriptableObject, ISearchWindowProvider
+    public class SleipnirGraphSearchProvider : ScriptableObject, ISearchWindowProvider
     {
         private SleipnirGraphView _view;
         
