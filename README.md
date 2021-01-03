@@ -93,7 +93,7 @@ node and that will place an instance in your graph.  You should beable to create
 
 The follow graph will perform an addition on the 2 float values and log the result to the console.
 
-Cheers! (For more examples dig into the codebase at ./Engine/Nodes)
+Cheers! (For more examples dig into the codebase at [./Engine/Nodes](https://github.com/red-owl-games/Sleipnir/tree/master/Engine/Nodes))
 
 ## Installing
 
