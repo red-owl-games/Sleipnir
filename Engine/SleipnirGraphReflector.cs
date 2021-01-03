@@ -209,11 +209,15 @@ namespace RedOwl.Sleipnir.Engine
     {
         public HashSet<string> Tags { get; set; }
         
+        public RequireNodeAttribute[] RequiredNodes { get; set; }
+        
         public bool ShouldCache(Type type)
         {
             var attr = type.GetCustomAttribute<GraphAttribute>();
             
             ExtractSettings(type, attr);
+
+            RequiredNodes = type.GetCustomAttributes<RequireNodeAttribute>().ToArray();
 
             return true;
         }

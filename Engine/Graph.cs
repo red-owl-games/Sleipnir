@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace RedOwl.Sleipnir.Engine
@@ -53,10 +54,29 @@ namespace RedOwl.Sleipnir.Engine
         private ConnectionsGraph flowOutConnections = new ConnectionsGraph();
 
         public ConnectionsGraph FlowOutConnections => flowOutConnections;
+
+        private void EnsureRequiredNodes(SleipnirGraphReflection data)
+        {
+            foreach (var attribute in data.RequiredNodes)
+            {
+                var nodes = new List<INode>(GetNodes(attribute.Type));
+                if (nodes.Count == 0)
+                {
+                    var node = (INode)Activator.CreateInstance(attribute.Type);
+                    Add(node); // Definition & Initialize are called here
+                    node.NodePosition = attribute.Position;
+                }
+            }
+        }
         
         protected override void OnDefinition()
         {
             base.OnDefinition();
+            if (SleipnirGraphReflector.GraphCache.Get(GetType(), out var data))
+            {
+                EnsureRequiredNodes(data);
+            }
+            
             // TODO: Generate Dynamic Ports based on graph's PortNodes
             foreach (var node in _nodes)
             {
