@@ -89,7 +89,7 @@ unity's serializer.  From there you double click the asset to open the Graph Edi
 From there you can press spacebar and a node search window will open - navigate to your new
 node and that will place an instance in your graph.  You should beable to create a graph like the following image.
 
-<img width=25% src="https://github.com/red-owl-games/Sleipnir/raw/master/example.png">
+<img width=100% src="https://github.com/red-owl-games/Sleipnir/raw/master/example.png">
 
 The follow graph will perform an addition on the 2 float values and log the result to the console.
 
