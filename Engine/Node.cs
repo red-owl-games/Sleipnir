@@ -59,11 +59,11 @@ namespace RedOwl.Sleipnir.Engine
         
         public string NodeTitle { get; protected set; }
 
-        public Dictionary<string, IValuePort> ValueInPorts { get; } = new Dictionary<string, IValuePort>();
-        public Dictionary<string, IValuePort> ValueOutPorts { get; } = new Dictionary<string, IValuePort>();
+        public Dictionary<string, IValuePort> ValueInPorts { get; private set; }
+        public Dictionary<string, IValuePort> ValueOutPorts { get; private set; }
         
-        public Dictionary<string, IFlowPort> FlowInPorts { get; } = new Dictionary<string, IFlowPort>();
-        public Dictionary<string, IFlowPort> FlowOutPorts { get; } = new Dictionary<string, IFlowPort>();
+        public Dictionary<string, IFlowPort> FlowInPorts { get; private set; }
+        public Dictionary<string, IFlowPort> FlowOutPorts { get; private set; }
         
 
         protected Node()
@@ -74,13 +74,12 @@ namespace RedOwl.Sleipnir.Engine
         }
         
         #region Definition
-        
-        // TODO: recheck that this is true
-        [field: NonSerialized] // Prevents a weird editor domain reload bug where IsDefined stays true
-        public bool IsDefined { get; private set; }
-        
+
         private void DefineValuePorts()
         {
+            if (ValueInPorts != null && ValueOutPorts != null) return;
+            ValueInPorts = new Dictionary<string, IValuePort>();
+            ValueOutPorts = new Dictionary<string, IValuePort>();
             if (!SleipnirGraphReflector.NodeCache.Get(GetType(), out var data)) return;
             foreach (var valuePort in data.ValuePorts)
             {
@@ -100,6 +99,9 @@ namespace RedOwl.Sleipnir.Engine
         
         private void DefineFlowPorts()
         {
+            if (FlowInPorts != null && FlowOutPorts != null) return;
+            FlowInPorts = new Dictionary<string, IFlowPort>();
+            FlowOutPorts = new Dictionary<string, IFlowPort>();
             if (!SleipnirGraphReflector.NodeCache.Get(GetType(), out var data)) return;
             foreach (var flowPort in data.FlowPorts)
             {
@@ -118,13 +120,11 @@ namespace RedOwl.Sleipnir.Engine
 
         public void Definition()
         {
-            if (IsDefined) return;
             try
             {
                 DefineValuePorts();
                 DefineFlowPorts();
                 OnDefinition();
-                IsDefined = true;
             }
             catch
             {

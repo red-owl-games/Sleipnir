@@ -43,14 +43,15 @@ gets out of your way and hopefully makes it trivial to build new graph based too
 ## Features
 
  - Strong interface based design - Graphs and Nodes can be POCO's (Plain Old CLR Object - IE Classes)
+   - Allows for c# code to generate graph data programmatically
  - Built ontop of Unity
-   - Uses Unity's Serializer to reduce outside dependancies (leverages the new `SerializeReference` features)
+   - Uses Unity's Serializer to reduce outside dependencies (leverages the new `SerializeReference` features)
    - Uses UI toolkit (UIElements) to support the future of Editor UI's
  - Natively supports Odin Inspector inside the Graph Editor Window
  - Complete control over flow/execution - Allows for writing any kind of graph, statemachine, behaviour, flow, etc
  - Batteries Included - Base classes for Graph, Node, Port and Flow to get up and working quickly
    - Also includes standard nodes and graph types that could be shared from graph tool to graph tool
-    
+   
 ## Quickstart
 
 To write a new custom node quickly you inherit from the base Node class and define your ports.
@@ -94,6 +95,32 @@ node and that will place an instance in your graph.  You should beable to create
 The follow graph will perform an addition on the 2 float values and log the result to the console.
 
 Cheers! (For more examples dig into the codebase at [./Engine/Nodes](https://github.com/red-owl-games/Sleipnir/tree/master/Engine/Nodes))
+
+## Creating Graphs via C#
+
+```csharp
+private static void CreateSampleGraph()
+{
+    var graph = new Graph();
+
+    var startNode = graph.Add(new StartNode {NodePosition = new Vector2(128, 0)});
+    var logNode1 = graph.Add(new LogNode {NodePosition = new Vector2(0, 100)});
+    var logNode2 = graph.Add(new LogNode {NodePosition = new Vector2(200, 100)});
+    var floatNode1 = graph.Add(new FloatValueNode(10) {NodePosition = new Vector2(-200, 0)});
+    var floatNode2 = graph.Add(new FloatValueNode(100) {NodePosition = new Vector2(-200, 200)});
+    var floatNode3 = graph.Add(new FloatValueNode(5) {NodePosition = new Vector2(-200, 400)});
+
+    // Flow
+    graph.Connect(startNode.Start, logNode1.Enter);
+    graph.Connect(startNode.Start, logNode2.Enter);
+
+    // Values
+    graph.Connect(floatNode1.Value, logNode1.Message);
+    graph.Connect(floatNode2.Value, logNode2.Message);
+
+    GraphAsset.Save(graph, "Generated", "Resources/Graphs");
+}
+```
 
 ## Installing
 

@@ -53,7 +53,7 @@ namespace RedOwl.Sleipnir.Engine
         private ConnectionsGraph flowOutConnections = new ConnectionsGraph();
 
         public ConnectionsGraph FlowOutConnections => flowOutConnections;
-
+        
         protected override void OnDefinition()
         {
             base.OnDefinition();
@@ -102,18 +102,14 @@ namespace RedOwl.Sleipnir.Engine
         public T Add<T>(T node) where T : INode
         {
             _nodes.Add(node);
-            if (IsDefined)
+            if (node is IFlowNode flowNode)
             {
-                if (node is IFlowNode flowNode)
-                {
-                    flowNode.Definition();
-                }
-                else
-                {
-                    node.Definition();
-                }
+                flowNode.Definition();
             }
-            
+            else
+            {
+                node.Definition();
+            }
             return node;
         }
 
