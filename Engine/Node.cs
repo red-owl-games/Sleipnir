@@ -7,7 +7,6 @@ namespace RedOwl.Sleipnir.Engine
     public interface INode
     {
         string NodeId { get; }
-        string NodeTitle { get; }
         Rect NodeRect { get; set; }
         Vector2 NodePosition { get; set; }
 
@@ -57,22 +56,12 @@ namespace RedOwl.Sleipnir.Engine
             set => nodeRect.position = value;
         }
         
-        public string NodeTitle { get; protected set; }
-
         public Dictionary<string, IValuePort> ValueInPorts { get; private set; }
         public Dictionary<string, IValuePort> ValueOutPorts { get; private set; }
         
         public Dictionary<string, IFlowPort> FlowInPorts { get; private set; }
         public Dictionary<string, IFlowPort> FlowOutPorts { get; private set; }
-        
 
-        protected Node()
-        {
-            bool found = SleipnirGraphReflector.NodeCache.Get(GetType(), out var data);
-            NodeRect = new Rect(new Vector2(0, 0), found ? data.Size : new Vector2(200, 100));
-            NodeTitle = found ? data.Name : "";
-        }
-        
         #region Definition
 
         private void DefineValuePorts()
@@ -172,6 +161,6 @@ namespace RedOwl.Sleipnir.Engine
 
         #endregion
 
-        public override string ToString() => $"{NodeTitle}Node";
+        public override string ToString() => GetType().Name;
     }
 }

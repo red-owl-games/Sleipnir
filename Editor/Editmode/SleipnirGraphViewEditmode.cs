@@ -8,21 +8,11 @@ using UnityEngine.UIElements;
 using NodeView = UnityEditor.Experimental.GraphView.Node;
 using PortView = UnityEditor.Experimental.GraphView.Port;
 
-
 namespace RedOwl.Sleipnir.Editor
 {
-    public class SleipnirGraphView : GraphView
+    public class SleipnirGraphViewEditmode : SleipnirGraphViewBase<SleipnirNodeViewEditmode>, IGraphView
     {
-        private GraphAsset _graphAsset;
-        private SerializedObject _serializedGraph;
-        private readonly IGraph _graph;
-        public IGraph Graph => _graph;
-        
-        private MiniMap _map;
-        private SleipnirGraphSearchProvider _search;
-        private IEdgeConnectorListener _edgeConnectorListener;
-
-        public SleipnirGraphView(GraphAsset asset)
+        public void Load(GraphAsset asset)
         {
             if (asset == null)
             {
@@ -30,16 +20,13 @@ namespace RedOwl.Sleipnir.Editor
                 return;
             }
 
-            _graphAsset = asset;
-            // This is to prepare for Undo's
-            _serializedGraph = new SerializedObject(asset);
-            _graph = asset.graph;
-            _graph.Definition();
-            _nodeViewCache = new Dictionary<string, SleipnirNodeView>(_graph.NodeCount);
+            GraphAsset = asset;
+            Graph.Definition();
+            _nodeViewCache = new Dictionary<string, INodeView>(Graph.NodeCount);
 
 
             RegisterCallback<GeometryChangedEvent>(GeometryChangedCallback);
-            RegisterCallback<KeyDownEvent>(KeyDownCallback);
+            RegisterCallback<KeyUpEvent>(OnKeyUp);
             
             SetupZoom(ContentZoomer.DefaultMinScale * 0.5f, ContentZoomer.DefaultMaxScale);
             
@@ -48,7 +35,7 @@ namespace RedOwl.Sleipnir.Editor
             this.AddManipulator(new RectangleSelector());
             graphViewChanged = OnGraphViewChanged;
 
-            _edgeConnectorListener = new SleipnirGraphEdgeConnectorListener(this);
+            
             CreateGridBackground();
             CreateMiniMap();
             CreateSearch();
@@ -57,29 +44,10 @@ namespace RedOwl.Sleipnir.Editor
             CreateNodeViews();
             CreateConnections();
         }
-        
-        private void CreateGridBackground()
-        {
-            var grid = new GridBackground {name = "Grid"};
-            Insert(0, grid);
-        }
-
-        private void CreateMiniMap()
-        {
-            _map = new MiniMap {anchored = true, maxWidth = 200, maxHeight = 100, visible = false};
-            Add(_map);
-        }
-
-        private void CreateSearch()
-        {
-            _search = ScriptableObject.CreateInstance<SleipnirGraphSearchProvider>();
-            _search.Initialize(this);
-            nodeCreationRequest = ctx => SearchWindow.Open(new SearchWindowContext(ctx.screenMousePosition), _search);
-        }
 
         private void CreateNodeViews()
         {
-            foreach (var node in _graph.Nodes)
+            foreach (var node in Graph.Nodes)
             {
                 CreateNodeView(node);
             }
@@ -88,16 +56,16 @@ namespace RedOwl.Sleipnir.Editor
         private void CreateConnections()
         {
             // TODO: Needs Refactor
-            foreach (var node in _graph.Nodes)
+            foreach (var node in Graph.Nodes)
             {
                 var view = _nodeViewCache[node.NodeId];
                 foreach (var valueIn in node.ValueInPorts.Values)
                 {
-                    foreach (var connection in _graph.ValueInConnections.SafeGet(valueIn.Id))
+                    foreach (var connection in Graph.ValueInConnections.SafeGet(valueIn.Id))
                     {
                         if (!_nodeViewCache.TryGetValue(connection.Node, out var outputView)) continue;
-                        var inputPort = view.inputContainer.Q<PortView>(valueIn.Id.Port);
-                        var outputPort = outputView.outputContainer.Q<PortView>(connection.Port);
+                        var inputPort = view.ValueInPortContainer.Q<PortView>(valueIn.Id.Port);
+                        var outputPort = outputView.ValueOutPortContainer.Q<PortView>(connection.Port);
                         if (inputPort != null && outputPort != null) 
                             AddElement(outputPort.ConnectTo(inputPort));
                     }
@@ -105,7 +73,7 @@ namespace RedOwl.Sleipnir.Editor
                 if (!(node is IFlowNode flowNode)) continue;
                 foreach (var flowOut in flowNode.FlowOutPorts.Values)
                 {
-                    foreach (var connection in _graph.FlowOutConnections.SafeGet(flowOut.Id))
+                    foreach (var connection in Graph.FlowOutConnections.SafeGet(flowOut.Id))
                     {
                         if (!_nodeViewCache.TryGetValue(connection.Node, out var inputView)) continue;
                         var inputPort = inputView.FlowInPortContainer.Q<PortView>(connection.Port);
@@ -119,17 +87,12 @@ namespace RedOwl.Sleipnir.Editor
 
         private void GeometryChangedCallback(GeometryChangedEvent evt)
         {
-            _map.SetPosition(new Rect(worldBound.width - 205, 25, 200, 100));
+            MiniMap.SetPosition(new Rect(worldBound.width - 205, 25, 200, 100));
         }
-        
-        private void KeyDownCallback(KeyDownEvent evt)
-        {
-            if (evt.keyCode == KeyCode.M) _map.visible = !_map.visible;
-        }
-        
+
         private GraphViewChange OnGraphViewChanged(GraphViewChange change)
         {
-            Undo.RecordObject(_graphAsset, "Graph Edit");
+            Undo.RecordObject(GraphAsset, "Graph Edit");
             bool changeMade = false;
             bool graphRedraw = false;
             if (change.elementsToRemove != null)
@@ -138,15 +101,15 @@ namespace RedOwl.Sleipnir.Editor
                 {
                     switch (element)
                     {
-                        case SleipnirNodeView view:
+                        case INodeView view:
                             changeMade = true;
                             graphRedraw = true; // Hack that cleans up the flow port connections
-                            _nodeViewCache.Remove(view.Model.NodeId);
-                            _graph.Remove(view.Model);
+                            _nodeViewCache.Remove(view.Node.NodeId);
+                            Graph.Remove(view.Node);
                             break;
                         case Edge edge:
                             changeMade = true;
-                            _graph.Disconnect((IPort)edge.output.userData, (IPort)edge.input.userData);
+                            Graph.Disconnect((IPort)edge.output.userData, (IPort)edge.input.userData);
                             break;
                         default:
                             Debug.LogWarning($"Unhandeled GraphElement Removed: {element.GetType().FullName} | {element.name} | {element.title}");
@@ -161,9 +124,9 @@ namespace RedOwl.Sleipnir.Editor
                 {
                     switch (element)
                     {
-                        case SleipnirNodeView view:
+                        case INodeView view:
                             changeMade = true; 
-                            view.Model.NodeRect = view.GetPosition();
+                            view.Node.NodeRect = view.GetPosition();
                             break;
                         default:
                             Debug.LogWarning($"Unhandeled GraphElement Moved: {element.GetType().FullName} | {element.name} | {element.title}");
@@ -177,19 +140,19 @@ namespace RedOwl.Sleipnir.Editor
                 foreach (var edge in change.edgesToCreate)
                 {
                     changeMade = true;
-                    _graph.Connect((IPort)edge.output.userData, (IPort)edge.input.userData);
+                    Graph.Connect((IPort)edge.output.userData, (IPort)edge.input.userData);
                 }
             }
 
             if (changeMade)
             {
-                SaveAsset();
+                Save();
             }
 
             if (graphRedraw)
             {
                 // TODO: this is a hack that cleans up the flow port connections - we may want to try and query for them and just delete them instead
-                SleipnirWindow.GetOrCreate().Load(_graphAsset);
+                SleipnirWindow.GetOrCreate().Load(GraphAsset);
             }
             return change;
         }
@@ -208,37 +171,92 @@ namespace RedOwl.Sleipnir.Editor
             });
             return compatible;
         }
-        
-        internal void CreateNode(SleipnirNodeReflection data, Vector2 position)
-        {
-            Undo.RecordObject(_graphAsset, "Create Node");
-            var node = (INode)Activator.CreateInstance(data.Type);
-            _graph.Add(node); // Definition & Initialize are called here
-            var window = EditorWindow.GetWindow<SleipnirWindow>();
-            node.NodePosition = window.rootVisualElement.ChangeCoordinatesTo(contentViewContainer, position - window.position.position - new Vector2(3, 26));
-            CreateNodeView(node);
-            SaveAsset();
-        }
 
-        private Dictionary<string, SleipnirNodeView> _nodeViewCache;
-        private void CreateNodeView<T>(T node) where T : INode
-        {
-            var element = new SleipnirNodeView(node, _edgeConnectorListener);
-            _nodeViewCache.Add(node.NodeId, element);
-            AddElement(element);
-        }
-
-        internal void SaveAsset()
+        public override void Save()
         {
             // TODO: Purge Keys from connections tables that have no values in their port collection?
-            EditorUtility.SetDirty(_graphAsset);
+            EditorUtility.SetDirty(GraphAsset);
             AssetDatabase.SaveAssets();
         }
 
-        public void OpenSearch(Vector2 screenPosition, PortView port = null)
+        private void OnKeyUp(KeyUpEvent evt)
         {
-            //_search.SourcePort = connectedPort;
-            SearchWindow.Open(new SearchWindowContext(screenPosition), _search);
+            if (evt.target != this)
+            {
+                return;
+            }
+
+            // C: Add a new comment around the selected nodes (or just at mouse position)
+            // if (evt.keyCode == KeyCode.C && !evt.ctrlKey && !evt.commandKey)
+            // {
+            //     AddComment();
+            // }
+
+            switch (evt.keyCode)
+            {
+                case KeyCode.M:
+                    MiniMap.visible = !MiniMap.visible;
+                    break;
+                case KeyCode.H when !evt.ctrlKey && !evt.commandKey:
+                    HorizontallyAlignSelectedNodes();
+                    break;
+                case KeyCode.V when !evt.ctrlKey && !evt.commandKey:
+                    VerticallyAlignSelectedNodes();
+                    break;
+            }
+        }
+        
+        protected void HorizontallyAlignSelectedNodes()
+        {
+            float sum = 0;
+            int count = 0;
+
+            foreach (var selectable in selection)
+            {
+                if (selectable is NodeView node)
+                {
+                    sum += node.GetPosition().xMin;
+                    count++;
+                }
+            }
+
+            float xAvg = sum / count;
+            foreach (var selectable in selection)
+            {
+                if (selectable is INodeView node && node.IsMoveable)
+                {
+                    var pos = node.GetPosition();
+                    pos.xMin = xAvg;
+                    node.SetPosition(pos);
+                }
+            }
+        }
+        
+
+        protected void VerticallyAlignSelectedNodes()
+        {
+            float sum = 0;
+            int count = 0;
+
+            foreach (var selectable in selection)
+            {
+                if (selectable is INodeView node && node.IsMoveable)
+                {
+                    sum += node.GetPosition().yMin;
+                    count++;
+                }
+            }
+
+            float yAvg = sum / count;
+            foreach (var selectable in selection)
+            {
+                if (selectable is NodeView node)
+                {
+                    var pos = node.GetPosition();
+                    pos.yMin = yAvg;
+                    node.SetPosition(pos);
+                }
+            }
         }
         
         /*

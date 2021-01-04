@@ -37,6 +37,12 @@ namespace RedOwl.Sleipnir.Engine
             return _cache.TryGetValue(type.SafeGetName(), out output);
         }
         
+        public TStorage Get(Type type)
+        {
+            ShouldBuildCache();
+            return _cache[type.SafeGetName()];
+        }
+        
         public void ShouldBuildCache(bool force = false)
         {
             if (_cache == null || force) BuildCache();
@@ -45,7 +51,7 @@ namespace RedOwl.Sleipnir.Engine
         private void BuildCache()
         {
             _cache = new Dictionary<string, TStorage>();
-            foreach (var type in TypeExtensions.GetAllTypes<T>())
+            foreach (var type in TypeExtensions.GetAllTypes(typeof(T)))
             {
                 var storage = new TStorage();
                 if (storage.ShouldCache(type))

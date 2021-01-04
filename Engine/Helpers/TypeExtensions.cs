@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Sirenix.OdinInspector.Editor;
+using Sirenix.Utilities;
 using UnityEngine;
 
 namespace RedOwl.Sleipnir.Engine
@@ -47,7 +49,7 @@ namespace RedOwl.Sleipnir.Engine
                 type = type.BaseType;
             }
         }
-        
+
         public static IEnumerable<Type> GetAllTypes()
         {
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -68,9 +70,9 @@ namespace RedOwl.Sleipnir.Engine
                     yield return type;
             }
         }
-        
-        public static IEnumerable<Type> GetAllTypes<T>() => GetAllTypes(typeof(T));
 
+        public static IEnumerable<Type> GetAllTypes<T>() => GetAllTypes(typeof(T));
+        
         public static IEnumerable<MethodInfo> GetMethods<T>(T instance)
         {
             foreach (MethodInfo info in instance.GetType().GetMethods(flags))

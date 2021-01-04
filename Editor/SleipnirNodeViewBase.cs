@@ -4,42 +4,67 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using NodeView = UnityEditor.Experimental.GraphView.Node;
 using PortView = UnityEditor.Experimental.GraphView.Port;
-using Edge = UnityEditor.Experimental.GraphView.Edge;
 
 namespace RedOwl.Sleipnir.Editor
 {
-    public class SleipnirNodeView : NodeView
+    public interface IEditorNodeView : INodeView
     {
+        IEdgeConnectorListener EdgeListener { get; set; }
+    }
+    
+    public class SleipnirNodeViewBase : NodeView, IEditorNodeView
+    {
+        public IEdgeConnectorListener EdgeListener { get; set; }
+        public VisualElement ValueInPortContainer => inputContainer;
+        public VisualElement ValueOutPortContainer => outputContainer;
         public VisualElement FlowInPortContainer { get; private set; }
         public VisualElement FlowOutPortContainer { get; private set; }
-        public INode Model => (INode) userData;
+        public INode Node => (INode) userData;
+        
+        public SleipnirNodeInfo ReflectionData { get; private set; }
 
-        public SleipnirNodeView(INode node, IEdgeConnectorListener listener)
+        public bool IsMoveable => ReflectionData.Moveable;
+        
+
+        #region API
+        protected virtual void OnInitialize() { }
+        protected virtual void OnDestroy() { }
+        protected virtual void OnError() { }
+        #endregion
+
+        public void Initialize(INode node, SleipnirNodeInfo data)
         {
             userData = node;
-            Initialize(node, listener);
-        }
-
-        private void Initialize(INode node, IEdgeConnectorListener listener)
-        {
+            ReflectionData = data;
             name = node.NodeId;
-            title = node.NodeTitle;
-            SetPosition(node.NodeRect);
-            // TODO: map capabilities AND if we use Resizeable we'll need to update the data's Rect with the changes.
-            //capabilities -= Capabilities.Collapsible;
-            //capabilities = Capabilities.Movable;
-            //capabilities = Capabilities.Resizable;
-            //this.IsResizable();
-            //style.width = Model.NodeRect.width;
-            //style.height = Model.NodeRect.height;
+            SetPosition(new Rect(node.NodePosition, ReflectionData.Size));
+            title = ReflectionData.Name;
+            tooltip = ReflectionData.Help;
+            if (!ReflectionData.Deletable)
+            {
+                capabilities &= ~Capabilities.Deletable;
+            }
+            if (!ReflectionData.Moveable)
+            {
+                capabilities &= ~Capabilities.Movable;
+            }
 
             CreateBody(node);
             CreateFlowPortContainers();
-            if (node is IFlowNode flowNode) CreateFlowPorts(flowNode, listener);
+            if (node is IFlowNode flowNode) CreateFlowPorts(flowNode);
             AttachFlowPortContainers();
-            CreateValuePorts(node, listener);
+            CreateValuePorts(node);
             RefreshExpandedState();
             RefreshPorts();
+            
+            RegisterCallback<DetachFromPanelEvent>((e) => Destroy());
+            
+            OnInitialize();
+        }
+        
+        internal void Destroy()
+        {
+            OnDestroy();
         }
         
         private void CreateBody(INode node)
@@ -53,25 +78,25 @@ namespace RedOwl.Sleipnir.Editor
 #endif
         }
         
-        private PortView CreatePortView(IPort valuePort, Orientation orientation, IEdgeConnectorListener listener)
+        private PortView CreatePortView(IPort valuePort, Orientation orientation)
         {
-            var view = new SleipnirPortView(orientation, valuePort.Direction, valuePort.Capacity, valuePort.ValueType, listener);
+            var view = new SleipnirPortView(orientation, valuePort.Direction, valuePort.Capacity, valuePort.ValueType, EdgeListener);
             view.name = valuePort.Id.Port;
             view.userData = valuePort;
             view.portName = valuePort.Name;
             return view;
         }
         
-        private void CreateValuePorts(INode node, IEdgeConnectorListener listener)
+        private void CreateValuePorts(INode node)
         {
             foreach (var valuePort in node.ValueInPorts.Values)
             {
-                inputContainer.Add(CreatePortView(valuePort, Orientation.Horizontal, listener));
+                ValueInPortContainer.Add(CreatePortView(valuePort, Orientation.Horizontal));
             }
             
             foreach (var valuePort in node.ValueOutPorts.Values)
             {
-                outputContainer.Add(CreatePortView(valuePort, Orientation.Horizontal, listener));
+                ValueOutPortContainer.Add(CreatePortView(valuePort, Orientation.Horizontal));
             }
         }
 
@@ -83,16 +108,16 @@ namespace RedOwl.Sleipnir.Editor
             FlowOutPortContainer.AddToClassList("FlowOutPorts");
         }
 
-        private void CreateFlowPorts(IFlowNode node, IEdgeConnectorListener listener)
+        private void CreateFlowPorts(IFlowNode node)
         {
             foreach (var flowPort in node.FlowInPorts.Values)
             {
-                FlowInPortContainer.Add(CreatePortView(flowPort, Orientation.Vertical, listener));
+                FlowInPortContainer.Add(CreatePortView(flowPort, Orientation.Vertical));
             }
             
             foreach (var flowPort in node.FlowOutPorts.Values)
             {
-                FlowOutPortContainer.Add(CreatePortView(flowPort, Orientation.Vertical, listener));
+                FlowOutPortContainer.Add(CreatePortView(flowPort, Orientation.Vertical));
             }
         }
 

@@ -32,7 +32,7 @@ namespace RedOwl.Sleipnir.Editor
             Entries = new List<SearchTreeEntry>();
         }
 
-        public void Add(SleipnirNodeReflection data)
+        public void Add(SleipnirNodeInfo data)
         {
             Entries.Add(new SearchTreeEntry(new GUIContent(data.Name)){ userData = data, level = Section.level + 1});
         }
@@ -40,12 +40,12 @@ namespace RedOwl.Sleipnir.Editor
     
     public class SleipnirGraphSearchProvider : ScriptableObject, ISearchWindowProvider
     {
-        private SleipnirGraphView _view;
+        private SleipnirGraphViewBase _view;
         
-        private SleipnirGraphReflection _graphTypeData;
+        private SleipnirGraphInfo _graphTypeData;
         private bool _useGraphTagMatching;
 
-        public void Initialize(SleipnirGraphView view)
+        public void Initialize(SleipnirGraphViewBase view)
         {
             _view = view;
             bool found = SleipnirGraphReflector.GraphCache.Get(_view.Graph.GetType(), out _graphTypeData);
@@ -71,7 +71,7 @@ namespace RedOwl.Sleipnir.Editor
 
         public bool OnSelectEntry(SearchTreeEntry entry, SearchWindowContext context)
         {
-            _view.CreateNode((SleipnirNodeReflection)entry.userData, context.screenMousePosition);
+            _view.CreateNode((SleipnirNodeInfo)entry.userData, context.screenMousePosition);
             return true;
         }
 

@@ -36,7 +36,7 @@ namespace RedOwl.Sleipnir.Editor
         }
         
         [SerializeReference] private GraphAsset _lastAsset;
-        private SleipnirGraphView _view;
+        private IGraphView _view;
 
         private Toolbar _toolbar;
 
@@ -81,15 +81,22 @@ namespace RedOwl.Sleipnir.Editor
         private void Cleanup()
         {
             if (_toolbar != null) rootVisualElement.Remove(_toolbar);
-            if (_view != null) rootVisualElement.Remove(_view);
+            if (_view is VisualElement element) rootVisualElement.Remove(element);
         }
 
         private void CreateView()
         {
             // TODO: Make GraphView work differently during "runtime" (IE no edits?)
-            _view = new SleipnirGraphView(_lastAsset);
-            rootVisualElement.Add(_view);
-            _view.StretchToParentSize();
+            _view = Application.isPlaying ? (IGraphView) new SleipnirGraphViewPlaymode() : new SleipnirGraphViewEditmode();
+
+            if (_view == null) return;
+            if (_view is IGraphView graphView) graphView.Load(_lastAsset);
+            if (_view is VisualElement element)
+            {
+                rootVisualElement.Add(element);
+                element.StretchToParentSize();
+            }
+            
         }
 
         private void CreateToolbar()
@@ -100,7 +107,7 @@ namespace RedOwl.Sleipnir.Editor
             // var clearBtn = new Button(() => { }) {text = "Clear"};
             // _toolbar.Add(clearBtn);
             //
-            var saveBtn = new Button(_view.SaveAsset) {text = "Save"};
+            var saveBtn = new Button(_view.Save) {text = "Save"};
             _toolbar.Add(saveBtn);
             
             var executeBtn = new Button(Execute) {text = "Execute"};

@@ -55,7 +55,7 @@ namespace RedOwl.Sleipnir.Engine
 
         public ConnectionsGraph FlowOutConnections => flowOutConnections;
 
-        private void EnsureRequiredNodes(SleipnirGraphReflection data)
+        private void EnsureRequiredNodes(SleipnirGraphInfo data)
         {
             foreach (var attribute in data.RequiredNodes)
             {

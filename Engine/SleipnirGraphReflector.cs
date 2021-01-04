@@ -83,11 +83,9 @@ namespace RedOwl.Sleipnir.Engine
          }
      }
 
-    public class SleipnirNodeReflection : ITypeStorage
+    public class SleipnirNodeInfo : ITypeStorage
     {
         private const BindingFlags BindingFlags = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy;
-        private static Type _nodeType = typeof(INode);
-        private static readonly Vector2 DefaultSize = new Vector2(100, 300);
         
         public Type Type { get; set; }
 
@@ -111,7 +109,9 @@ namespace RedOwl.Sleipnir.Engine
         
         public List<FlowPortSettings> FlowPorts { get; set; }
         
-        private Dictionary<string, MethodInfo> _methods;
+        public Type EditorNodeView { get; private set; }
+        public Type RuntimeNodeView { get; private set; }
+        
         private Dictionary<ContextMenu, MethodInfo> _contextMethods;
         
         public IReadOnlyDictionary<ContextMenu, MethodInfo> ContextMethods => _contextMethods;
@@ -119,34 +119,35 @@ namespace RedOwl.Sleipnir.Engine
         public bool ShouldCache(Type type)
         {
             var attr = type.GetCustomAttribute<NodeAttribute>();
+            if (attr == null) return false;
+            Type = type;
             
-            ExtractSettings(type, attr);
-            ExtractValuePorts(type);
-            ExtractFlowPorts(type);
-            ExtractContextMethods(type);
+            ExtractSettings(attr);
+            ExtractValuePorts();
+            ExtractFlowPorts();
+            ExtractContextMethods();
+            ExtractViews();
 
             return true;
         }
 
-        private void ExtractSettings(Type type, NodeAttribute attr)
+        private void ExtractSettings(NodeAttribute attr)
         {
-            bool isNull = attr == null;
-            Type = type;
-            Name = isNull || string.IsNullOrEmpty(attr.Name) ? type.Name.Replace("Node", "").Replace(".", "/") : attr.Name;
-            Path = isNull || string.IsNullOrEmpty(attr.Path) ? type.Namespace?.Replace(".", "/").Split('/') : attr.Path.Split('/');
-            Help = isNull ? "" : attr.Tooltip;
-            Tags = isNull ? new HashSet<string>() : new HashSet<string>(attr.Tags);
-            Deletable = isNull || attr.Deletable;
-            Moveable = isNull || attr.Moveable;
-            IsFlowRoot = isNull ? false : attr.IsFlowRoot;
-            Size = isNull ? DefaultSize : attr.Size;
+            Name = string.IsNullOrEmpty(attr.Name) ? Type.Name.Replace("Node", "").Replace(".", "/") : attr.Name;
+            Path = string.IsNullOrEmpty(attr.Path) ? Type.Namespace?.Replace(".", "/").Split('/') : attr.Path.Split('/');
+            Help = attr.Tooltip;
+            Tags = new HashSet<string>(attr.Tags);
+            Deletable = attr.Deletable;
+            Moveable = attr.Moveable;
+            IsFlowRoot = attr.IsFlowRoot;
+            Size = attr.Size;
         }
 
-        private void ExtractValuePorts(Type type)
+        private void ExtractValuePorts()
         {
             ValuePorts = new List<ValuePortSettings>();
             // This OrderBy sorts the fields by the order they are defined in the code with subclass fields first
-            var infos = type.GetFields(BindingFlags).OrderBy(field => field.MetadataToken);
+            var infos = Type.GetFields(BindingFlags).OrderBy(field => field.MetadataToken);
             foreach (var info in infos)
             {
                 var attrs = info.GetCustomAttributes(true);
@@ -165,13 +166,13 @@ namespace RedOwl.Sleipnir.Engine
             }
         }
 
-        private void ExtractFlowPorts(Type type)
+        private void ExtractFlowPorts()
         {
             FlowPorts = new List<FlowPortSettings>();
             // This OrderBy sorts the fields by the order they are defined in the code with subclass fields first
-            var methodInfos = type.GetMethodTable(BindingFlags);
+            var methodInfos = Type.GetMethodTable(BindingFlags);
             methodInfos.Add(string.Empty, null);
-            var fieldInfos = type.GetFields(BindingFlags).OrderBy(field => field.MetadataToken);
+            var fieldInfos = Type.GetFields(BindingFlags).OrderBy(field => field.MetadataToken);
             foreach (var fieldInfo in fieldInfos)
             {
                 var attrs = fieldInfo.GetCustomAttributes(true);
@@ -191,10 +192,10 @@ namespace RedOwl.Sleipnir.Engine
             }
         }
         
-        private void ExtractContextMethods(Type type)
+        private void ExtractContextMethods()
         {
             _contextMethods = new Dictionary<ContextMenu, MethodInfo>();
-            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            foreach (var method in Type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
                 var contextAttr = method.GetCustomAttribute<ContextMenu>();
                 if (contextAttr != null)
@@ -203,9 +204,37 @@ namespace RedOwl.Sleipnir.Engine
                 }
             }
         }
+
+        private static Dictionary<Type, Type> _editorNodeViews;
+        private static Dictionary<Type, Type> _runtimeNodeViews;
+        
+        private void CacheViewClasses()
+        {
+            if (_editorNodeViews != null && _runtimeNodeViews != null) return;
+            _editorNodeViews = new Dictionary<Type, Type>(50);
+            _runtimeNodeViews = new Dictionary<Type, Type>(50);
+            foreach (var type in TypeExtensions.GetAllTypes<INodeView>())
+            {
+                foreach (var attr in type.GetCustomAttributes<CustomNodeViewAttribute>(false))
+                {
+                    _editorNodeViews.Add(attr.NodeType, type);
+                    if (attr.IsRuntimeView)
+                    {
+                        _runtimeNodeViews.Add(attr.NodeType, type);
+                    }
+                }
+            }
+        }
+
+        private void ExtractViews()
+        {
+            CacheViewClasses();
+            EditorNodeView = _editorNodeViews.TryGetValue(Type, out var editorType) ? editorType : null;
+            RuntimeNodeView = _editorNodeViews.TryGetValue(Type, out var runtimeType) ? runtimeType : null;
+        }
     }
 
-    public class SleipnirGraphReflection : ITypeStorage
+    public class SleipnirGraphInfo : ITypeStorage
     {
         public HashSet<string> Tags { get; set; }
         
@@ -231,8 +260,8 @@ namespace RedOwl.Sleipnir.Engine
 
     public static class SleipnirGraphReflector
     {
-        public static readonly TypeCache<INode, SleipnirNodeReflection> NodeCache = new TypeCache<INode, SleipnirNodeReflection>();
+        public static readonly TypeCache<INode, SleipnirNodeInfo> NodeCache = new TypeCache<INode, SleipnirNodeInfo>();
         
-        public static readonly TypeCache<IGraph, SleipnirGraphReflection> GraphCache = new TypeCache<IGraph, SleipnirGraphReflection>();
+        public static readonly TypeCache<IGraph, SleipnirGraphInfo> GraphCache = new TypeCache<IGraph, SleipnirGraphInfo>();
     }
 }

@@ -42,14 +42,14 @@ namespace RedOwl.Sleipnir.Engine
             var parameters = settings.Callback.GetParameters();
             if (parameters.Length != 1)
             {
-                Debug.LogWarning($"FlowPort Callback for '{node.NodeTitle}.{settings.Callback.Name}' has {parameters.Length} parameter(s).  Can only accept 1 parameter of type 'IFlow'");
+                Debug.LogWarning($"FlowPort Callback for '{node}.{settings.Callback.Name}' has {parameters.Length} parameter(s).  Can only accept 1 parameter of type 'IFlow'");
                 return;
             }
 
             var paramType = parameters[0].ParameterType;
             if (paramType != FlowType)
             {
-                Debug.LogWarning($"FlowPort Callback for '{node.NodeTitle}.{settings.Callback.Name}' has 1 parameter that takes type '{paramType}'.  Can only accept 1 parameter of type 'IFlow'");
+                Debug.LogWarning($"FlowPort Callback for '{node}.{settings.Callback.Name}' has 1 parameter that takes type '{paramType}'.  Can only accept 1 parameter of type 'IFlow'");
                 return;
             }
             _hasCallback = false;
@@ -68,7 +68,7 @@ namespace RedOwl.Sleipnir.Engine
                 _asyncCallback = (Func<IFlow, IEnumerator>)settings.Callback.CreateDelegate(AsyncCallbackType, node);
                 _hasCallback = true;
             }
-            if (!_hasCallback) Debug.LogWarning($"FlowPort Callback for '{node.NodeTitle}.{settings.Callback.Name}' did not have one of the following method signatures [Action<IFlow>, Func<IFlow, IFlowPort>, Func<IFlow, IEnumerator>]");
+            if (!_hasCallback) Debug.LogWarning($"FlowPort Callback for '{node}.{settings.Callback.Name}' did not have one of the following method signatures [Action<IFlow>, Func<IFlow, IFlowPort>, Func<IFlow, IEnumerator>]");
             // TODO: Log about bad callback setup?
         }
 

@@ -1,6 +1,6 @@
 namespace RedOwl.Sleipnir.Engine
 {
-    [Node("Common", Path = "Common")]
+    [Node("Common", Path = "Common", Tooltip = "Nest a Graph that comes from a Graph Asset")]
     public class GraphReferenceNode : Node
     {
         public GraphAsset Graph;

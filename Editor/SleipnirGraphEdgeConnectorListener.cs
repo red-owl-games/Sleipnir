@@ -1,5 +1,7 @@
+using RedOwl.Sleipnir.Engine;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+using UnityEngine.UIElements;
 using PortView = UnityEditor.Experimental.GraphView.Port;
 
 namespace RedOwl.Sleipnir.Editor
@@ -10,9 +12,9 @@ namespace RedOwl.Sleipnir.Editor
     /// </summary>
     public class SleipnirGraphEdgeConnectorListener : IEdgeConnectorListener
     {
-        private SleipnirGraphView view;
+        private SleipnirGraphViewBase view;
     
-        public SleipnirGraphEdgeConnectorListener(SleipnirGraphView view)
+        public SleipnirGraphEdgeConnectorListener(SleipnirGraphViewBase view)
         {
             this.view = view;
         }
