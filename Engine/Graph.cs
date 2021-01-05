@@ -16,6 +16,7 @@ namespace RedOwl.Sleipnir.Engine
         T Add<T>(T node) where T : INode;
         bool Get(string id, out INode node);
         void Remove<T>(T node) where T : INode;
+        void Clear();
 
         ConnectionsGraph ValueInConnections { get; }
         ConnectionsGraph FlowOutConnections { get; }
@@ -23,14 +24,21 @@ namespace RedOwl.Sleipnir.Engine
         void Disconnect(IPort output, IPort input);
     }
 
+    [Serializable]
     [Graph]
     [Node("Common", Name = "SubGraph", Path = "Common")]
     public class Graph : Node, IGraph
     {
-        [SerializeReference] 
-        private List<INode> _nodes = new List<INode>();
+        [SerializeField]
+        private string title = "Sub Graph";
+
+        public string Title => title;
+        
+        [SerializeReference, HideInInspector] 
+        private List<INode> _nodes;
 
         public IEnumerable<INode> Nodes => _nodes;
+        public int NodeCount => _nodes.Count;
 
         public IEnumerable<IFlowNode> RootNodes
         {
@@ -43,17 +51,18 @@ namespace RedOwl.Sleipnir.Engine
             }
         }
 
-        public int NodeCount => _nodes.Count;
-        
-        [SerializeField]
-        private ConnectionsGraph valueInConnections = new ConnectionsGraph();
-
+        [SerializeField, HideInInspector]
+        private ConnectionsGraph valueInConnections;
         public ConnectionsGraph ValueInConnections => valueInConnections;
         
-        [SerializeField]
-        private ConnectionsGraph flowOutConnections = new ConnectionsGraph();
-
+        [SerializeField, HideInInspector]
+        private ConnectionsGraph flowOutConnections;
         public ConnectionsGraph FlowOutConnections => flowOutConnections;
+
+        public Graph()
+        {
+            Clear();
+        }
 
         private void EnsureRequiredNodes(SleipnirGraphInfo data)
         {
@@ -80,7 +89,7 @@ namespace RedOwl.Sleipnir.Engine
             // TODO: Generate Dynamic Ports based on graph's PortNodes
             foreach (var node in _nodes)
             {
-                node.Definition();
+                node.Definition(this);
             }
         }
 
@@ -124,11 +133,11 @@ namespace RedOwl.Sleipnir.Engine
             _nodes.Add(node);
             if (node is IFlowNode flowNode)
             {
-                flowNode.Definition();
+                flowNode.Definition(this);
             }
             else
             {
-                node.Definition();
+                node.Definition(this);
             }
             return node;
         }
@@ -159,6 +168,13 @@ namespace RedOwl.Sleipnir.Engine
                     _nodes.RemoveAt(i);
                 }
             }
+        }
+
+        public void Clear()
+        {
+            _nodes = new List<INode>();
+            valueInConnections = new ConnectionsGraph();
+            flowOutConnections = new ConnectionsGraph();
         }
 
         private void CleanupFlowPortConnections(INode target)

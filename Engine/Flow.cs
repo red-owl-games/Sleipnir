@@ -23,11 +23,17 @@ namespace RedOwl.Sleipnir.Engine
     {
         public IGraph Graph { get; }
         public IFlowNode[] RootNodes { get; }
-        
-        public Flow(IGraph graph, IFlowNode[] nodes = null)
+
+        public Flow(IGraph graph)
         {
             Graph = graph;
-            RootNodes = nodes ?? new List<IFlowNode>(graph.RootNodes).ToArray();
+            RootNodes = new List<IFlowNode>(graph.RootNodes).ToArray();
+        }
+        
+        public Flow(IGraph graph, params IFlowNode[] nodes)
+        {
+            Graph = graph;
+            RootNodes = nodes;
         }
 
         private string FormatKey(PortId id) => $"{id.Node}.{id.Port}";

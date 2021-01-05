@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using RedOwl.Sleipnir.Engine;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
@@ -13,10 +14,17 @@ namespace RedOwl.Sleipnir.Editor
     public class SleipnirGraphEdgeConnectorListener : IEdgeConnectorListener
     {
         private SleipnirGraphViewBase view;
+        
+        private GraphViewChange _graphViewChange;
+        private List<Edge> _edgesToCreate;
+        private List<GraphElement> _edgesToDelete;
     
         public SleipnirGraphEdgeConnectorListener(SleipnirGraphViewBase view)
         {
             this.view = view;
+            _edgesToCreate = new List<Edge>();
+            _edgesToDelete = new List<GraphElement>();
+            _graphViewChange.edgesToCreate = _edgesToCreate;
         }
 
         /// <summary>
@@ -24,7 +32,34 @@ namespace RedOwl.Sleipnir.Editor
         /// </summary>
         public void OnDrop(GraphView graphView, Edge edge)
         {
-            view.AddElement(edge);
+            _edgesToCreate.Clear();
+            _edgesToCreate.Add(edge);
+            _edgesToDelete.Clear();
+            if (edge.input.capacity == PortView.Capacity.Single)
+            {
+                foreach (Edge connection in edge.input.connections)
+                {
+                    if (connection != edge)
+                        _edgesToDelete.Add(connection);
+                }
+            }
+            if (edge.output.capacity == PortView.Capacity.Single)
+            {
+                foreach (Edge connection in edge.output.connections)
+                {
+                    if (connection != edge)
+                        _edgesToDelete.Add(connection);
+                }
+            }
+            if (_edgesToDelete.Count > 0) graphView.DeleteElements(_edgesToDelete);
+            List<Edge> edgesToCreate = _edgesToCreate;
+            if (graphView.graphViewChanged != null) edgesToCreate = graphView.graphViewChanged(_graphViewChange).edgesToCreate;
+            foreach (Edge edge1 in edgesToCreate)
+            {
+                graphView.AddElement(edge1);
+                edge.input.Connect(edge1);
+                edge.output.Connect(edge1);
+            }
         }
 
         /// <summary>

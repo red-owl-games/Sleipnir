@@ -74,7 +74,7 @@ namespace RedOwl.Sleipnir.Editor
             bool useUndo = node is Object;
             extensionContainer.Add(new IMGUIContainer(() => tree.Draw(useUndo)) { name = "OdinTree"});
 #else
-            // TODO: Draw Property Field
+            // TODO: Draw Property Field's with UI Elements
 #endif
         }
         

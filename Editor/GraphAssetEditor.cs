@@ -9,7 +9,7 @@ namespace RedOwl.Sleipnir.Editor
     {
         public override void OnInspectorGUI ()
         {
-            if (GUILayout.Button("Open Editor", GUILayout.Height(40))) SleipnirWindow.Open((GraphAsset) serializedObject.targetObject);
+            if (GUILayout.Button("Open Editor", GUILayout.Height(40))) SleipnirEditor.Open((GraphAsset) serializedObject.targetObject);
         }
     }
 }

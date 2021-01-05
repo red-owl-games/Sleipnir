@@ -6,6 +6,7 @@ namespace RedOwl.Sleipnir.Engine
 {
     public interface INode
     {
+        IGraph Graph { get; }
         string NodeId { get; }
         Rect NodeRect { get; set; }
         Vector2 NodePosition { get; set; }
@@ -14,7 +15,7 @@ namespace RedOwl.Sleipnir.Engine
         Dictionary<string, IValuePort> ValueInPorts { get; }
         Dictionary<string, IValuePort> ValueOutPorts { get; }
         
-        void Definition();
+        void Definition(IGraph graph);
     }
 
     public interface IFlowNode : INode
@@ -30,6 +31,8 @@ namespace RedOwl.Sleipnir.Engine
     [Serializable]
     public abstract class Node : IFlowNode 
     {
+        public IGraph Graph { get; private set; }
+        
 #if ODIN_INSPECTOR 
         [HideInInspector]
 #endif
@@ -107,8 +110,9 @@ namespace RedOwl.Sleipnir.Engine
             }
         }
 
-        public void Definition()
+        public void Definition(IGraph graph)
         {
+            Graph = graph;
             try
             {
                 DefineValuePorts();

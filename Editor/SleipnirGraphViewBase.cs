@@ -46,13 +46,18 @@ namespace RedOwl.Sleipnir.Editor
         
         public void CreateNode(SleipnirNodeInfo data, Vector2 position)
         {
-            Undo.RecordObject(GraphAsset, "Create Node");
+            RecordUndo("Create Node");
             var node = (INode)Activator.CreateInstance(data.Type);
             Graph.Add(node); // Definition & Initialize are called here
             var window = EditorWindow.GetWindow<SleipnirWindow>();
             node.NodePosition = window.rootVisualElement.ChangeCoordinatesTo(contentViewContainer, position - window.position.position - new Vector2(3, 26));
             CreateNodeView(node);
             Save();
+        }
+
+        protected void RecordUndo(string title)
+        {
+            if (GraphAsset != null) Undo.RecordObject(GraphAsset, title);
         }
 
         public void OpenSearch(Vector2 screenPosition, PortView port = null)

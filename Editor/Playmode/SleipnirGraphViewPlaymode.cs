@@ -8,10 +8,9 @@ namespace RedOwl.Sleipnir.Editor
         {
             CreateGridBackground();
         }
+        
+        public void Reload() {}
 
-        public override void Save()
-        {
-            
-        }
+        public override void Save() {}
     }
 }

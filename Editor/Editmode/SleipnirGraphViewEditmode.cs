@@ -12,37 +12,73 @@ namespace RedOwl.Sleipnir.Editor
 {
     public class SleipnirGraphViewEditmode : SleipnirGraphViewBase<SleipnirNodeViewEditmode>, IGraphView
     {
-        public void Load(GraphAsset asset)
+        public SleipnirGraphViewEditmode()
         {
-            if (asset == null)
-            {
-                CreateGridBackground();
-                return;
-            }
-
-            GraphAsset = asset;
-            Graph.Definition();
-            _nodeViewCache = new Dictionary<string, INodeView>(Graph.NodeCount);
-
-
             RegisterCallback<GeometryChangedEvent>(GeometryChangedCallback);
             RegisterCallback<KeyUpEvent>(OnKeyUp);
+            
+            graphViewChanged = OnGraphViewChanged;
+            viewTransformChanged = OnViewTransformChanged;
             
             SetupZoom(ContentZoomer.DefaultMinScale * 0.5f, ContentZoomer.DefaultMaxScale);
             
             this.AddManipulator(new ContentDragger());
             this.AddManipulator(new SelectionDragger());
             this.AddManipulator(new RectangleSelector());
-            graphViewChanged = OnGraphViewChanged;
-
             
             CreateGridBackground();
             CreateMiniMap();
-            CreateSearch();
+        }
+        
+        public override List<PortView> GetCompatiblePorts(PortView startPort, NodeAdapter nodeAdapter)
+        {
+            var compatible = new List<PortView>();
+            ports.ForEach(p =>
+            {
+                if (startPort == p) return;
+                if (startPort.node == p.node) return;
+                if (startPort.direction == p.direction) return;
+                if (p.direction == Direction.Input && !startPort.portType.IsCastableTo(p.portType, true)) return;
+                if (p.direction == Direction.Output && !p.portType.IsCastableTo(startPort.portType, true)) return;
+                compatible.Add(p);
+            });
+            return compatible;
+        }
 
+        public override void Save()
+        {
+            if (GraphAsset == null) return;
+            // TODO: Purge Keys from connections tables that have no values in their port collection?
+            EditorUtility.SetDirty(GraphAsset);
+            AssetDatabase.SaveAssets();
+        }
+        
+        public void Load(GraphAsset asset)
+        {
+            if (asset == null) return;
+            if (asset.graph == null) asset.graph = new Graph();
+            GraphAsset = asset;
+            Reload();
+        }
+
+        public void Reload()
+        {
+            Cleanup();
+            if (GraphAsset == null) return;
+            Graph.Definition(Graph);
+            _nodeViewCache = new Dictionary<string, INodeView>(Graph.NodeCount);
+            CreateSearch();
             // TODO: If graph.NodeCount > 100 we need a loading bar and maybe an async process that does the below
+            // https://docs.unity3d.com/ScriptReference/EditorUtility.DisplayProgressBar.html
             CreateNodeViews();
             CreateConnections();
+        }
+
+        protected void Cleanup()
+        {
+            graphViewChanged = null;
+            DeleteElements(graphElements.ToList());
+            graphViewChanged = OnGraphViewChanged;
         }
 
         private void CreateNodeViews()
@@ -55,32 +91,40 @@ namespace RedOwl.Sleipnir.Editor
 
         private void CreateConnections()
         {
-            // TODO: Needs Refactor
             foreach (var node in Graph.Nodes)
             {
                 var view = _nodeViewCache[node.NodeId];
-                foreach (var valueIn in node.ValueInPorts.Values)
+                CreateValueConnections(view, node);
+                if (node is IFlowNode flowNode)CreateFlowConnections(view, flowNode);
+            }
+        }
+
+        private void CreateFlowConnections(INodeView view, IFlowNode flowNode)
+        {
+            foreach (var flowOut in flowNode.FlowOutPorts.Values)
+            {
+                foreach (var connection in Graph.FlowOutConnections.SafeGet(flowOut.Id))
                 {
-                    foreach (var connection in Graph.ValueInConnections.SafeGet(valueIn.Id))
-                    {
-                        if (!_nodeViewCache.TryGetValue(connection.Node, out var outputView)) continue;
-                        var inputPort = view.ValueInPortContainer.Q<PortView>(valueIn.Id.Port);
-                        var outputPort = outputView.ValueOutPortContainer.Q<PortView>(connection.Port);
-                        if (inputPort != null && outputPort != null) 
-                            AddElement(outputPort.ConnectTo(inputPort));
-                    }
+                    if (!_nodeViewCache.TryGetValue(connection.Node, out var inputView)) continue;
+                    var inputPort = inputView.FlowInPortContainer.Q<PortView>(connection.Port);
+                    var outputPort = view.FlowOutPortContainer.Q<PortView>(flowOut.Id.Port);
+                    if (inputPort != null && outputPort != null)
+                        AddElement(outputPort.ConnectTo(inputPort));
                 }
-                if (!(node is IFlowNode flowNode)) continue;
-                foreach (var flowOut in flowNode.FlowOutPorts.Values)
+            }
+        }
+
+        private void CreateValueConnections(INodeView view, INode node)
+        {
+            foreach (var valueIn in node.ValueInPorts.Values)
+            {
+                foreach (var connection in Graph.ValueInConnections.SafeGet(valueIn.Id))
                 {
-                    foreach (var connection in Graph.FlowOutConnections.SafeGet(flowOut.Id))
-                    {
-                        if (!_nodeViewCache.TryGetValue(connection.Node, out var inputView)) continue;
-                        var inputPort = inputView.FlowInPortContainer.Q<PortView>(connection.Port);
-                        var outputPort = view.FlowOutPortContainer.Q<PortView>(flowOut.Id.Port);
-                        if (inputPort != null && outputPort != null)
-                            AddElement(outputPort.ConnectTo(inputPort));
-                    }
+                    if (!_nodeViewCache.TryGetValue(connection.Node, out var outputView)) continue;
+                    var inputPort = view.ValueInPortContainer.Q<PortView>(valueIn.Id.Port);
+                    var outputPort = outputView.ValueOutPortContainer.Q<PortView>(connection.Port);
+                    if (inputPort != null && outputPort != null)
+                        AddElement(outputPort.ConnectTo(inputPort));
                 }
             }
         }
@@ -92,7 +136,7 @@ namespace RedOwl.Sleipnir.Editor
 
         private GraphViewChange OnGraphViewChanged(GraphViewChange change)
         {
-            Undo.RecordObject(GraphAsset, "Graph Edit");
+            RecordUndo("Graph Edit");
             bool changeMade = false;
             bool graphRedraw = false;
             if (change.elementsToRemove != null)
@@ -152,31 +196,14 @@ namespace RedOwl.Sleipnir.Editor
             if (graphRedraw)
             {
                 // TODO: this is a hack that cleans up the flow port connections - we may want to try and query for them and just delete them instead
-                SleipnirWindow.GetOrCreate().Load(GraphAsset);
+                SleipnirEditor.GetOrCreate().Load(GraphAsset);
             }
             return change;
         }
-
-        public override List<PortView> GetCompatiblePorts(PortView startPort, NodeAdapter nodeAdapter)
+        
+        private void OnViewTransformChanged(GraphView graphview)
         {
-            var compatible = new List<PortView>();
-            ports.ForEach(p =>
-            {
-                if (startPort == p) return;
-                if (startPort.node == p.node) return;
-                if (startPort.direction == p.direction) return;
-                if (p.direction == Direction.Input && !startPort.portType.IsCastableTo(p.portType, true)) return;
-                if (p.direction == Direction.Output && !p.portType.IsCastableTo(startPort.portType, true)) return;
-                compatible.Add(p);
-            });
-            return compatible;
-        }
-
-        public override void Save()
-        {
-            // TODO: Purge Keys from connections tables that have no values in their port collection?
-            EditorUtility.SetDirty(GraphAsset);
-            AssetDatabase.SaveAssets();
+            
         }
 
         private void OnKeyUp(KeyUpEvent evt)
@@ -186,14 +213,11 @@ namespace RedOwl.Sleipnir.Editor
                 return;
             }
 
-            // C: Add a new comment around the selected nodes (or just at mouse position)
-            // if (evt.keyCode == KeyCode.C && !evt.ctrlKey && !evt.commandKey)
-            // {
-            //     AddComment();
-            // }
-
             switch (evt.keyCode)
             {
+                case KeyCode.C when !evt.ctrlKey && !evt.commandKey:
+                    // AddComment();
+                    break;
                 case KeyCode.M:
                     MiniMap.visible = !MiniMap.visible;
                     break;
@@ -210,7 +234,8 @@ namespace RedOwl.Sleipnir.Editor
         {
             float sum = 0;
             int count = 0;
-
+            
+            // TODO: Implement a way to Align to "first selected" thing rather then average
             foreach (var selectable in selection)
             {
                 if (selectable is NodeView node)
@@ -258,12 +283,5 @@ namespace RedOwl.Sleipnir.Editor
                 }
             }
         }
-        
-        /*
-        public void Clean()
-        {
-            DeleteElements(graphElements.ToList());
-        }
-        */
     }
 }
