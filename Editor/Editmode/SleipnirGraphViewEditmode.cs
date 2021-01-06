@@ -134,11 +134,26 @@ namespace RedOwl.Sleipnir.Editor
             MiniMap.SetPosition(new Rect(worldBound.width - 205, 25, 200, 100));
         }
 
+        private void CleanupFlowConnectionElements(PortView port)
+        {
+            foreach (Edge connection in new List<Edge>(port.connections))
+            {
+                if ((connection.capabilities & Capabilities.Deletable) != 0)
+                {
+                    Graph.Disconnect((IPort) connection.output.userData, (IPort) connection.input.userData);
+                    // Replicate what Unity is doing in their "DeleteElement" method
+                    connection.output.Disconnect(connection);
+                    connection.input.Disconnect(connection);
+                    // connection.output = null;
+                    // connection.input = null;
+                    RemoveElement(connection);
+                }
+            }
+        }
         private GraphViewChange OnGraphViewChanged(GraphViewChange change)
         {
             RecordUndo("Graph Edit");
             bool changeMade = false;
-            bool graphRedraw = false;
             if (change.elementsToRemove != null)
             {
                 foreach (var element in change.elementsToRemove)
@@ -147,7 +162,8 @@ namespace RedOwl.Sleipnir.Editor
                     {
                         case INodeView view:
                             changeMade = true;
-                            graphRedraw = true; // Hack that cleans up the flow port connections
+                            view.FlowInPortContainer.Query<PortView>().ForEach(CleanupFlowConnectionElements);
+                            view.FlowOutPortContainer.Query<PortView>().ForEach(CleanupFlowConnectionElements);
                             _nodeViewCache.Remove(view.Node.NodeId);
                             Graph.Remove(view.Node);
                             break;
@@ -192,12 +208,7 @@ namespace RedOwl.Sleipnir.Editor
             {
                 Save();
             }
-
-            if (graphRedraw)
-            {
-                // TODO: this is a hack that cleans up the flow port connections - we may want to try and query for them and just delete them instead
-                SleipnirEditor.GetOrCreate().Load(GraphAsset);
-            }
+            
             return change;
         }
         
