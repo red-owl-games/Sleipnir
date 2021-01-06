@@ -56,7 +56,7 @@ namespace RedOwl.Sleipnir.Editor
         public void Load(GraphAsset asset)
         {
             if (asset == null) return;
-            if (asset.graph == null) asset.graph = new Graph();
+            if (asset.Graph == null) asset.Graph = new Graph();
             GraphAsset = asset;
             Reload();
         }
@@ -95,25 +95,10 @@ namespace RedOwl.Sleipnir.Editor
             {
                 var view = _nodeViewCache[node.NodeId];
                 CreateValueConnections(view, node);
-                if (node is IFlowNode flowNode)CreateFlowConnections(view, flowNode);
+                if (node is IFlowNode flowNode) CreateFlowConnections(view, flowNode);
             }
         }
-
-        private void CreateFlowConnections(INodeView view, IFlowNode flowNode)
-        {
-            foreach (var flowOut in flowNode.FlowOutPorts.Values)
-            {
-                foreach (var connection in Graph.FlowOutConnections.SafeGet(flowOut.Id))
-                {
-                    if (!_nodeViewCache.TryGetValue(connection.Node, out var inputView)) continue;
-                    var inputPort = inputView.FlowInPortContainer.Q<PortView>(connection.Port);
-                    var outputPort = view.FlowOutPortContainer.Q<PortView>(flowOut.Id.Port);
-                    if (inputPort != null && outputPort != null)
-                        AddElement(outputPort.ConnectTo(inputPort));
-                }
-            }
-        }
-
+        
         private void CreateValueConnections(INodeView view, INode node)
         {
             foreach (var valueIn in node.ValueInPorts.Values)
@@ -125,6 +110,27 @@ namespace RedOwl.Sleipnir.Editor
                     var outputPort = outputView.ValueOutPortContainer.Q<PortView>(connection.Port);
                     if (inputPort != null && outputPort != null)
                         AddElement(outputPort.ConnectTo(inputPort));
+                }
+            }
+        }
+
+        private void CreateFlowConnections(INodeView view, IFlowNode flowNode)
+        {
+            foreach (var flowOut in flowNode.FlowOutPorts.Values)
+            {
+                foreach (var connection in Graph.FlowOutConnections.SafeGet(flowOut.Id))
+                {
+                    if (!_nodeViewCache.TryGetValue(connection.Node, out var inputView))
+                    {
+                        Debug.Log($"Unable To Find Node View for {connection.Node}");
+                        continue;
+                    }
+                    var inputPort = inputView.FlowInPortContainer.Q<PortView>(connection.Port);
+                    var outputPort = view.FlowOutPortContainer.Q<PortView>(flowOut.Id.Port);
+                    if (inputPort != null && outputPort != null)
+                        AddElement(outputPort.ConnectTo(inputPort));
+                    else
+                        Debug.Log("Unable To Make a Flow Port Connection");
                 }
             }
         }

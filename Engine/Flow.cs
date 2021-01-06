@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace RedOwl.Sleipnir.Engine
 {
     public interface IFlow
     {
-        IGraph Graph { get; }
+        Stack<IGraph> Graph { get; }
         IFlowNode[] RootNodes { get; }
         bool ContainsKey(PortId id);
         bool ContainsKey(string key);
@@ -16,23 +17,37 @@ namespace RedOwl.Sleipnir.Engine
         void Set<T>(string key, T value);
         void Clear();
         void Execute();
+    }
+
+    public class TraverseIntoNestedGraph : CustomYieldInstruction
+    {
+        public IGraph Graph { get; }
         
+        public TraverseIntoNestedGraph(IGraph graph)
+        {
+            Graph = graph;
+        }
+
+        public override bool keepWaiting => false;
     }
 
     public class Flow : BetterDictionary<string, object>, IFlow
     {
-        public IGraph Graph { get; }
+        public Stack<IGraph> Graph { get; }
         public IFlowNode[] RootNodes { get; }
 
         public Flow(IGraph graph)
         {
-            Graph = graph;
-            RootNodes = new List<IFlowNode>(graph.RootNodes).ToArray();
+            Graph = new Stack<IGraph>();
+            Graph.Push(graph);
+            RootNodes = new List<IFlowNode>(graph.GetRootNodes()).ToArray();
+
         }
         
         public Flow(IGraph graph, params IFlowNode[] nodes)
         {
-            Graph = graph;
+            Graph = new Stack<IGraph>();
+            Graph.Push(graph);
             RootNodes = nodes;
         }
 
@@ -85,7 +100,7 @@ namespace RedOwl.Sleipnir.Engine
         
         public static void Execute(IFlow flow)
         {
-            flow.Graph.Initialize(ref flow);
+            flow.Graph.Peek().Initialize(ref flow);
             foreach (var node in flow.RootNodes)
             {
                 flow.Clear();
@@ -96,7 +111,7 @@ namespace RedOwl.Sleipnir.Engine
         public static void ExecutePort(ref IFlow flow, IFlowPort port)
         {
             // TODO: This might need to be a custom while loop executor to handle supporting Yield Instructions
-            while (port.Execute(flow).MoveNext()) {}
+            while (port.Execute().MoveNext()) {}
         }
         
         public static void WalkValuePorts(ref IFlow flow, INode node)
@@ -111,12 +126,13 @@ namespace RedOwl.Sleipnir.Engine
 
         public static void WalkValueIn(ref IFlow flow, INode node, IValuePort input)
         {
-            // Debug.Log($"Walking ValueIn '[{node}]{input}'");
-            foreach (var connection in flow.Graph.ValueInConnections.SafeGet(input.Id))
+            var currentGraph = flow.Graph.Peek();
+            Debug.Log($"Inside '{currentGraph}' Walking ValueIn '{node} {input}'");
+            foreach (var connection in currentGraph.ValueInConnections.SafeGet(input.Id))
             {
-                var nextNode = flow.Graph.GetNode(connection.Node); //  TODO: Needs saftey check?
+                var nextNode = currentGraph.GetNode(connection.Node); //  TODO: Needs saftey check?
                 var output = nextNode.ValueOutPorts[connection.Port]; // TODO: Needs saftey check?
-                // Debug.Log($"Pulled Value for '[{node}]{input}' from '[{nextNode}]{output}'");
+                Debug.Log($"Inside '{currentGraph}' Pulled Value for '{node} {input}' from '{nextNode} {output}'");
                 flow.Set(input.Id, output.WeakValue);
             }
         }
@@ -133,31 +149,90 @@ namespace RedOwl.Sleipnir.Engine
 
         public static void WalkFlowOut(ref IFlow flow, IFlowNode node, IFlowPort output)
         {
-            //Debug.Log($"Walking FlowOut '[{node}]{output}'");
+            
             if (node.IsFlowRoot) WalkValuePorts(ref flow, node);
             ExecutePort(ref flow, output);
-            foreach (var input in flow.Graph.FlowOutConnections.SafeGet(output.Id))
+            var currentGraph = flow.Graph.Peek();
+            Debug.Log($"Inside '{currentGraph}' Walking FlowOut '{node} {output}'");
+            foreach (var input in currentGraph.FlowOutConnections.SafeGet(output.Id))
             {
-                var nextNode = (IFlowNode)flow.Graph.GetNode(input.Node);
+                var nextNode = (IFlowNode)currentGraph.GetNode(input.Node);
                 var nextPort = nextNode?.FlowInPorts[input.Port];
-                //Debug.Log($"Traversing Towards '[{nextNode}]{nextPort}'");
+                Debug.Log($"Inside '{currentGraph}' Traversing Towards '{nextNode} {nextPort}'");
                 if (nextNode != null && nextPort != null) WalkFlowIn(ref flow, nextNode, nextPort);
             }
         }
 
         public static void WalkFlowIn(ref IFlow flow, IFlowNode node, IFlowPort input)
         {
-            //Debug.Log($"Walking FlowIn '[{node}]{input}'");
+            var currentGraph = flow.Graph.Peek();
+            Debug.Log($"Inside '{currentGraph}' Walking FlowIn '{node} {input}'");
             WalkValuePorts(ref flow, node);
-            var enumerator = input.Execute(flow);
+            var enumerator = input.Execute();
+            var count = 0;
             while (enumerator.MoveNext())
             {
                 // TODO: Handle Yield Instructions / Custom Yield Instructions
-                if (enumerator.Current is IFlowPort nextPort) // TODO: saftey check for being given a FlowOut port?
+                var current = enumerator.Current;
+                if (current is TraverseIntoNestedGraph traversal)
                 {
-                    //Debug.Log($"Traversing Towards '[{node}]{nextPort}'");
+                    if (currentGraph != traversal.Graph)
+                    {
+                        Debug.Log($"Push '{traversal.Graph}' onto stack");
+                        count++;
+                        flow.Graph.Push(traversal.Graph);
+                        currentGraph = traversal.Graph;
+                    }
+                }
+                if (current is IFlowPort nextPort) // TODO: saftey check for being given a FlowOut port?
+                {
+                    Debug.Log($"Inside '{currentGraph}' Traversing Towards '{node} {nextPort}'");
                     WalkFlowOut(ref flow, node, nextPort);
                 }
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                Debug.Log($"Pop '{flow.Graph.Pop()}' from stack");
+            }
+        }
+        
+        #endregion
+        
+        #region FlowTypes
+        
+        public static IEnumerable<T> Traverse<T>(T root, Func<T, IEnumerable<T>> children)
+        {
+            var stack = new Stack<T>();
+            stack.Push(root);
+            while(stack.Count != 0)
+            {
+                T item = stack.Pop();
+                yield return item;
+                foreach(var child in children(item))
+                    stack.Push(child);
+            }
+        }
+        
+        public static IEnumerable<T> Traverse<T>(IEnumerable<T> roots, Func<T, IEnumerable<T>> children)
+        {
+            return from root in roots from item in Traverse(root, children) select item;
+        }
+        
+        // Track what we've seen and don't revisit
+        public static IEnumerable<T> TransitiveClosure<T>(T root, Func<T, IEnumerable<T>> children)
+        {
+            var seen = new HashSet<T>();
+            var stack = new Stack<T>();
+            stack.Push(root);
+
+            while(stack.Count != 0)
+            {
+                T item = stack.Pop();
+                if (!seen.Add(item)) continue;
+                yield return item;
+                foreach(var child in children(item))
+                    stack.Push(child);
             }
         }
         

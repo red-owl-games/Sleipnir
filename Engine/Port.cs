@@ -11,6 +11,14 @@ namespace RedOwl.Sleipnir.Engine
         Output,
     }
 
+    public static class PortDirectionExtensions
+    {
+        public static PortDirection Flip(this PortDirection self)
+        {
+            return self == PortDirection.Input ? PortDirection.Output : PortDirection.Input;
+        }
+    }
+
     public enum PortCapacity
     {
         Single,
@@ -21,6 +29,8 @@ namespace RedOwl.Sleipnir.Engine
     {
         PortId Id { get; }
         
+        IGraph Graph { get; }
+        
         string Name { get; }
 
         PortDirection Direction { get; }
@@ -28,6 +38,8 @@ namespace RedOwl.Sleipnir.Engine
         PortCapacity Capacity { get; }
         
         Type ValueType { get; }
+        
+        void Initialize(ref IFlow flow);
     }
 
     [Serializable]
@@ -50,11 +62,14 @@ namespace RedOwl.Sleipnir.Engine
 
     public abstract class Port
     {
-        public PortId Id { get; internal set; }
+        public PortId Id { get; protected set; }
+        public IGraph Graph { get; protected set; }
         public string Name { get; protected set; }
         public PortDirection Direction { get; protected set; }
         public PortCapacity Capacity { get; protected set; }
         
-        public override string ToString() => $"[{Name} | {Direction} | {Capacity}]";
+        public IFlow Flow { get; protected set; }
+        
+        public override string ToString() => $"{GetType().Name}[{Name} | {Direction} | {Capacity}]";
     }
 }

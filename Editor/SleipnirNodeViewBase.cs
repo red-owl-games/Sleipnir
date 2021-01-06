@@ -1,4 +1,5 @@
 using RedOwl.Sleipnir.Engine;
+using Sirenix.OdinInspector;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -38,7 +39,7 @@ namespace RedOwl.Sleipnir.Editor
             ReflectionData = data;
             name = node.NodeId;
             SetPosition(new Rect(node.NodePosition, ReflectionData.Size));
-            title = ReflectionData.Name;
+            title = $"{ReflectionData.Name}({name.Substring(0,8)})";
             tooltip = ReflectionData.Help;
             if (!ReflectionData.Deletable)
             {
@@ -75,6 +76,7 @@ namespace RedOwl.Sleipnir.Editor
             extensionContainer.Add(new IMGUIContainer(() => tree.Draw(useUndo)) { name = "OdinTree"});
 #else
             // TODO: Draw Property Field's with UI Elements
+            // http://wiki.unity3d.com/index.php/ExposePropertiesInInspector_Generic
 #endif
         }
         

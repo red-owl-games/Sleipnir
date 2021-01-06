@@ -9,7 +9,7 @@ namespace RedOwl.Sleipnir.Engine
     public class GraphAsset : ScriptableObject
     {
         [SerializeReference] 
-        public IGraph graph;
+        public IGraph Graph;
 
         [Conditional("UNITY_EDITOR")]
         public static void Save<T>(T graph, string name = null, string relativeFolder = null) where T : IGraph
@@ -32,7 +32,7 @@ namespace RedOwl.Sleipnir.Engine
                 return current;
             }
             var asset = CreateInstance<GraphAsset>();
-            asset.graph = graph;
+            asset.Graph = graph;
             name = string.IsNullOrEmpty(name) ? typeof(T).Name : name;
             relativeFolder = string.IsNullOrEmpty(relativeFolder) ? "Resources" : relativeFolder;
             string filepath = Path.Combine(EnsureFolderExits(relativeFolder), name);

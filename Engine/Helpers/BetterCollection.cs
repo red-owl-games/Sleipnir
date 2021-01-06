@@ -39,7 +39,6 @@ namespace RedOwl.Sleipnir.Engine
              {
                  if (_collection[i].Equals(value))
                  {
-                     Debug.Log($"Removing Index {i}");
                      _collection.RemoveAt(i);
                  }
              }

@@ -15,6 +15,8 @@ namespace RedOwl.Sleipnir.Engine
         Dictionary<string, IValuePort> ValueInPorts { get; }
         Dictionary<string, IValuePort> ValueOutPorts { get; }
         
+        bool IsDefined { get; }
+        
         void Definition(IGraph graph);
     }
 
@@ -59,17 +61,16 @@ namespace RedOwl.Sleipnir.Engine
             set => nodeRect.position = value;
         }
         
-        public Dictionary<string, IValuePort> ValueInPorts { get; private set; }
-        public Dictionary<string, IValuePort> ValueOutPorts { get; private set; }
+        public Dictionary<string, IValuePort> ValueInPorts { get; protected set; }
+        public Dictionary<string, IValuePort> ValueOutPorts { get; protected set; }
         
-        public Dictionary<string, IFlowPort> FlowInPorts { get; private set; }
-        public Dictionary<string, IFlowPort> FlowOutPorts { get; private set; }
+        public Dictionary<string, IFlowPort> FlowInPorts { get; protected set; }
+        public Dictionary<string, IFlowPort> FlowOutPorts { get; protected set; }
 
         #region Definition
 
         private void DefineValuePorts()
         {
-            if (ValueInPorts != null && ValueOutPorts != null) return;
             ValueInPorts = new Dictionary<string, IValuePort>();
             ValueOutPorts = new Dictionary<string, IValuePort>();
             if (!SleipnirGraphReflector.NodeCache.Get(GetType(), out var data)) return;
@@ -91,7 +92,6 @@ namespace RedOwl.Sleipnir.Engine
         
         private void DefineFlowPorts()
         {
-            if (FlowInPorts != null && FlowOutPorts != null) return;
             FlowInPorts = new Dictionary<string, IFlowPort>();
             FlowOutPorts = new Dictionary<string, IFlowPort>();
             if (!SleipnirGraphReflector.NodeCache.Get(GetType(), out var data)) return;
@@ -109,15 +109,23 @@ namespace RedOwl.Sleipnir.Engine
                 //Debug.Log($"{NodeTitle}Node has Flow Port '{flowPort.Name} | {flowPort.Direction}'");
             }
         }
+        
+        [field: NonSerialized]
+        public bool IsDefined { get; protected set; }
 
         public void Definition(IGraph graph)
         {
+            BeforeDefinition();
+            if (IsDefined) return;
             Graph = graph;
             try
             {
+                // TODO: can we scope this better?
                 DefineValuePorts();
                 DefineFlowPorts();
                 OnDefinition();
+                IsDefined = true;
+                AfterDefinition();
             }
             catch
             {
@@ -126,7 +134,10 @@ namespace RedOwl.Sleipnir.Engine
             }
         }
 
+        protected virtual void BeforeDefinition() {}
         protected virtual void OnDefinition() {}
+        
+        protected virtual void AfterDefinition() {}
         
         #endregion
 
@@ -138,7 +149,7 @@ namespace RedOwl.Sleipnir.Engine
         {
             try
             {
-                InitializeValuePorts(ref flow);
+                InitializePorts(ref flow);
                 OnInitialize(ref flow);
             }
             catch
@@ -148,7 +159,7 @@ namespace RedOwl.Sleipnir.Engine
             }
         }
 
-        private void InitializeValuePorts(ref IFlow flow)
+        private void InitializePorts(ref IFlow flow)
         {
             foreach (var valueIn in ValueInPorts.Values)
             {
@@ -159,12 +170,22 @@ namespace RedOwl.Sleipnir.Engine
             {
                 valueOut.Initialize(ref flow);
             }
+            
+            foreach (var flowIn in FlowInPorts.Values)
+            {
+                flowIn.Initialize(ref flow);
+            }
+            
+            foreach (var flowOut in FlowOutPorts.Values)
+            {
+                flowOut.Initialize(ref flow);
+            }
         }
         
         protected virtual void OnInitialize(ref IFlow flow) {}
 
         #endregion
 
-        public override string ToString() => GetType().Name;
+        public override string ToString() => $"{GetType().Name}[{NodeId.Substring(0,8)}]";
     }
 }

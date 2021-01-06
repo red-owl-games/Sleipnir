@@ -9,41 +9,53 @@ namespace RedOwl.Sleipnir.Engine
         object DefaultValue { get; }
         object WeakValue { get; }
         void Definition(INode node, ValuePortSettings settings);
-        void Initialize(ref IFlow flow);
+        IValuePort Clone(INode node);
     }
 
     [Preserve]
     public class ValuePort<T> : Port, IValuePort
     {
-        private IFlow currentFlow;
         public object DefaultValue { get; private set; }
-        public object WeakValue => currentFlow != null && currentFlow.ContainsKey(Id) ? currentFlow.Get<object>(Id) : DefaultValue;
+        public object WeakValue => Flow != null && Flow.ContainsKey(Id) ? Flow.Get<object>(Id) : DefaultValue;
         
         public T Value
         {
-            get => currentFlow != null && currentFlow.ContainsKey(Id) ? currentFlow.Get<T>(Id) : (T) DefaultValue;
+            get => Flow != null && Flow.ContainsKey(Id) ? Flow.Get<T>(Id) : (T) DefaultValue;
             set
             {
-                if (currentFlow == null)
+                if (Flow == null)
                 {
                     DefaultValue = value;
                 }
                 else
                 {
-                    currentFlow.Set(Id, value);
+                    Flow.Set(Id, value);
                 }
             }
         }
 
         public Type ValueType { get; protected set; }
         
+        [Preserve]
+        public ValuePort()
+        {
+            Value = default;
+        }
+        
         public ValuePort(T defaultValue)
         {
             Value = defaultValue;
         }
         
-        [Preserve]
-        public ValuePort() : this(default) {}
+        public ValuePort(ValuePort<T> other, INode node, PortDirection direction, string name)
+        {
+            Id = new PortId(node.NodeId, name);;
+            Name = name;
+            Direction = direction;
+            Capacity = other.Capacity;
+            ValueType = typeof(T);
+            Flow = other.Flow;
+        }
 
         public void SetDefault(T defaultValue) => DefaultValue = defaultValue;
         
@@ -58,11 +70,24 @@ namespace RedOwl.Sleipnir.Engine
 
         public void Initialize(ref IFlow flow)
         {
-            currentFlow = flow;
-            currentFlow.Set(Id, (T)DefaultValue);
+            Flow = flow;
+            Flow.Set(Id, (T)DefaultValue);
+        }
+        
+        public IValuePort Clone(INode node)
+        {
+            return new ValuePort<T>(this, node, Direction, Name);
         }
 
         public static implicit operator T(ValuePort<T> self) => self.Value;
         public static implicit operator ValuePort<T>(T self) => new ValuePort<T>(self);
+    }
+
+    public static class ValuePortExtensions
+    {
+        public static ValuePort<T> Flip<T>(this ValuePort<T> self, INode node, string name)
+        {
+            return new ValuePort<T>(self, node, self.Direction.Flip(), name);
+        }
     }
 }

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using RedOwl.Sleipnir.Engine.Nodes.SubGraph;
 using UnityEngine;
 
 namespace RedOwl.Sleipnir.Engine
@@ -9,9 +9,7 @@ namespace RedOwl.Sleipnir.Engine
     {
         IEnumerable<INode> Nodes { get; }
         int NodeCount { get; }
-        IEnumerable<IFlowNode> RootNodes { get; }
         INode GetNode(string id);
-        IEnumerable<T> GetNodes<T>() where T : INode;
         IEnumerable<INode> GetNodes(Type type);
         T Add<T>(T node) where T : INode;
         bool Get(string id, out INode node);
@@ -34,28 +32,20 @@ namespace RedOwl.Sleipnir.Engine
 
         public string Title => title;
         
-        [SerializeReference, HideInInspector] 
+        [SerializeReference]
+        //[HideInInspector] 
         private List<INode> _nodes;
 
         public IEnumerable<INode> Nodes => _nodes;
         public int NodeCount => _nodes.Count;
 
-        public IEnumerable<IFlowNode> RootNodes
-        {
-            get
-            {
-                foreach (var node in _nodes)
-                {
-                    if (node is IFlowNode flowNode && flowNode.IsFlowRoot) yield return flowNode;
-                }
-            }
-        }
-
-        [SerializeField, HideInInspector]
+        [SerializeField]
+        //[HideInInspector]
         private ConnectionsGraph valueInConnections;
         public ConnectionsGraph ValueInConnections => valueInConnections;
         
-        [SerializeField, HideInInspector]
+        [SerializeField]
+        //[HideInInspector]
         private ConnectionsGraph flowOutConnections;
         public ConnectionsGraph FlowOutConnections => flowOutConnections;
 
@@ -77,10 +67,23 @@ namespace RedOwl.Sleipnir.Engine
                 }
             }
         }
-        
+
+        // TODO: Graphs need their own "Definition" flow separate from Nodes
+        protected override void BeforeDefinition()
+        {
+            // If any node in the graph isn't defined then make the graph redefine itself
+            foreach (var node in _nodes)
+            {
+                if (node is Graph subgraph) subgraph.BeforeDefinition();
+                if (node.IsDefined) continue;
+                // Debug.Log($"Node '{node}' was marked as Not Defined - Lets Redefining Graph");
+                IsDefined = false;
+                return;
+            }
+        }
+
         protected override void OnDefinition()
         {
-            base.OnDefinition();
             if (SleipnirGraphReflector.GraphCache.Get(GetType(), out var data))
             {
                 EnsureRequiredNodes(data);
@@ -90,6 +93,47 @@ namespace RedOwl.Sleipnir.Engine
             foreach (var node in _nodes)
             {
                 node.Definition(this);
+                string name;
+                switch (node)
+                {
+                    case IGraphValuePort graphValuePort:
+                    {
+                        var graphValuePortMirrored = graphValuePort.Port;
+                        name = graphValuePortMirrored.Name;
+                        if (string.IsNullOrEmpty(name)) break;
+                        // TODO: Error Handle / Needs name overlap checking
+                        switch (graphValuePortMirrored.Direction)
+                        {
+                            case PortDirection.Input:
+                                if (ValueInPorts.ContainsKey(name)) Debug.LogWarning($"Found Duplicate Graph Port on '{node}.{name}'");
+                                else ValueInPorts.Add(name, graphValuePortMirrored);
+                                break;
+                            case PortDirection.Output:
+                                if (ValueOutPorts.ContainsKey(name)) Debug.LogWarning($"Found Duplicate Graph Port on '{node}.{name}'");
+                                else ValueOutPorts.Add(name, graphValuePortMirrored);
+                                break;
+                        }
+                        break;
+                    }
+                    case IGraphFlowPort graphFlowPort:
+                        var graphFlowPortMirrored = graphFlowPort.Port;
+                        name = graphFlowPortMirrored.Name;
+                        if (string.IsNullOrEmpty(name)) break;
+                        // TODO: Error Handle / Needs name overlap checking
+                        switch (graphFlowPortMirrored.Direction)
+                        {
+                            case PortDirection.Input:
+                                if (FlowInPorts.ContainsKey(name)) Debug.LogWarning($"Found Duplicate Graph Port on '{node}.{name}'");
+                                else FlowInPorts.Add(name, graphFlowPortMirrored);
+                                break;
+                            case PortDirection.Output:
+                                if (FlowOutPorts.ContainsKey(name)) Debug.LogWarning($"Found Duplicate Graph Port on '{node}.{name}'");
+                                else FlowOutPorts.Add(name, graphFlowPortMirrored);
+                                break;
+                        }
+
+                        break;
+                }
             }
         }
 
@@ -109,14 +153,6 @@ namespace RedOwl.Sleipnir.Engine
             }
             Debug.Log($"Cannot Find Node '{id}' in graph");
             return null;
-        }
-        
-        public IEnumerable<T> GetNodes<T>() where T : INode
-        {
-            foreach(var node in GetNodes(typeof(T)))
-            {
-                yield return (T) node;
-            }
         }
 
         public IEnumerable<INode> GetNodes(Type nodeType)
@@ -139,6 +175,12 @@ namespace RedOwl.Sleipnir.Engine
             {
                 node.Definition(this);
             }
+
+            if (node is IGraphPort)
+            {
+                Debug.Log("Added Node Was a GraphPort - Reseting IsDefined");
+                IsDefined = false;
+            }
             return node;
         }
 
@@ -157,6 +199,7 @@ namespace RedOwl.Sleipnir.Engine
 
         public void Remove<T>(T node) where T : INode
         {
+            if (node is IGraphPort) IsDefined = false;
             // TODO: If _nodes was a dictionary this would be easier
             for (int i = _nodes.Count - 1; i >= 0; i--)
             {
@@ -175,6 +218,7 @@ namespace RedOwl.Sleipnir.Engine
             _nodes = new List<INode>();
             valueInConnections = new ConnectionsGraph();
             flowOutConnections = new ConnectionsGraph();
+            IsDefined = false;
         }
 
         private void CleanupFlowPortConnections(INode target)
@@ -211,6 +255,30 @@ namespace RedOwl.Sleipnir.Engine
                 valueInConnections.Disconnect(valueIn.Id, valueOut.Id);
             if (input is IFlowPort flowIn && output is IFlowPort flowOut)
                 flowOutConnections.Disconnect(flowOut.Id, flowIn.Id);
+        }
+
+        public override string ToString()
+        {
+            return $"{GetType().Name}[{Title}, {NodeId.Substring(0,8)}]";
+        }
+    }
+    
+    public static class GraphExtensions
+    {
+        public static IEnumerable<T> GetNodes<T>(this IGraph graph) where T : INode
+        {
+            foreach(var node in graph.GetNodes(typeof(T)))
+            {
+                yield return (T) node;
+            }
+        }
+        
+        public static IEnumerable<IFlowNode> GetRootNodes(this IGraph graph)
+        {
+            foreach (var node in graph.Nodes)
+            {
+                if (node is IFlowNode flowNode && flowNode.IsFlowRoot) yield return flowNode;
+            }
         }
     }
 }

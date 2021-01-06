@@ -20,7 +20,7 @@ namespace RedOwl.Sleipnir.Engine
             All = 0b_11111
         }
         
-        public GraphAsset graph;
+        public GraphAsset asset;
         public Stages stage;
         
         private IFlow _awakeFlow;
@@ -31,11 +31,11 @@ namespace RedOwl.Sleipnir.Engine
         
         private void Awake()
         {
-            _awakeFlow = new Flow<StartNode>(graph.graph);
-            _startFlow = new Flow<StartNode>(graph.graph);
-            _updateFlow = new Flow<UpdateNode>(graph.graph);
-            _fixedUpdateFlow = new Flow<FixedUpdateNode>(graph.graph);
-            _lateUpdateFlow = new Flow<LateUpdateNode>(graph.graph);
+            _awakeFlow = new Flow<StartNode>(asset.Graph);
+            _startFlow = new Flow<StartNode>(asset.Graph);
+            _updateFlow = new Flow<UpdateNode>(asset.Graph);
+            _fixedUpdateFlow = new Flow<FixedUpdateNode>(asset.Graph);
+            _lateUpdateFlow = new Flow<LateUpdateNode>(asset.Graph);
             
             if (stage.HasFlag(Stages.Awake)) _awakeFlow.Execute();
         }

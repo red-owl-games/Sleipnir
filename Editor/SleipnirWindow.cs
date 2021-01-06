@@ -111,7 +111,7 @@ namespace RedOwl.Sleipnir.Editor
 
         private void Execute()
         {
-            if (_current != null &&  _current.graph != null) new Flow(_current.graph).Execute();
+            if (_current != null &&  _current.Graph != null) new Flow(_current.Graph).Execute();
         }
 
         private const string ClearTitle = "Clear Graph?";
@@ -121,7 +121,7 @@ namespace RedOwl.Sleipnir.Editor
         {
             if (EditorUtility.DisplayDialog(ClearTitle, ClearMessage, "Yes") && _current != null)
             {
-                _current.graph?.Clear();
+                _current.Graph?.Clear();
                 Reload();
             }
         }

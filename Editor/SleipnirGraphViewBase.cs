@@ -12,7 +12,7 @@ namespace RedOwl.Sleipnir.Editor
     public abstract class SleipnirGraphViewBase : GraphView
     {
         public GraphAsset GraphAsset { get; protected set; }
-        public IGraph Graph => GraphAsset.graph;
+        public IGraph Graph => GraphAsset.Graph;
         public GridBackground GridBackground { get; private set; }
         public SleipnirGraphSearchProvider SearchProvider { get; private set; }
         public MiniMap MiniMap { get; private set; }
