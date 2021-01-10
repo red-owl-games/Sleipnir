@@ -4,8 +4,8 @@ using UnityEngine.UIElements;
 
 namespace RedOwl.Sleipnir.Editor
 {
-    [CustomNodeView(typeof(Graph))]
-    [CustomNodeView(typeof(GraphReferenceNode))]
+    [NodeView(typeof(Graph))]
+    [NodeView(typeof(GraphReferenceNode))]
     public class GraphReferenceNodeView : SleipnirNodeViewBase
     {
         private Button OpenGraphButton;

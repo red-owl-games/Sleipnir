@@ -22,7 +22,7 @@ namespace RedOwl.Sleipnir.Editor
         public VisualElement FlowOutPortContainer { get; private set; }
         public INode Node => (INode) userData;
         
-        public SleipnirNodeInfo ReflectionData { get; private set; }
+        public NodeInfo ReflectionData { get; private set; }
 
         public bool IsMoveable => ReflectionData.Moveable;
         
@@ -33,7 +33,7 @@ namespace RedOwl.Sleipnir.Editor
         protected virtual void OnError() { }
         #endregion
 
-        public void Initialize(INode node, SleipnirNodeInfo data)
+        public void Initialize(INode node, NodeInfo data)
         {
             userData = node;
             ReflectionData = data;
@@ -52,7 +52,11 @@ namespace RedOwl.Sleipnir.Editor
 
             CreateBody(node);
             CreateFlowPortContainers();
-            if (node is IFlowNode flowNode) CreateFlowPorts(flowNode);
+            if (node is IFlowNode flowNode)
+            {
+                CreateExecuteButton(flowNode);
+                CreateFlowPorts(flowNode);
+            }
             AttachFlowPortContainers();
             CreateValuePorts(node);
             RefreshExpandedState();
@@ -80,12 +84,14 @@ namespace RedOwl.Sleipnir.Editor
 #endif
         }
         
-        private PortView CreatePortView(IPort valuePort, Orientation orientation)
+        private PortView CreatePortView(IPort port, Orientation orientation)
         {
-            var view = new SleipnirPortView(orientation, valuePort.Direction, valuePort.Capacity, valuePort.ValueType, EdgeListener);
-            view.name = valuePort.Id.Port;
-            view.userData = valuePort;
-            view.portName = valuePort.Name;
+            var view = new SleipnirPortView(orientation, port.Direction, port.Capacity, port.ValueType, EdgeListener)
+            {
+                name = port.Name,
+                userData = port,
+                portName = port.Name,
+            };
             return view;
         }
         
@@ -108,6 +114,13 @@ namespace RedOwl.Sleipnir.Editor
             FlowInPortContainer.AddToClassList("FlowInPorts");
             FlowOutPortContainer = new VisualElement {name = "FlowPorts"};
             FlowOutPortContainer.AddToClassList("FlowOutPorts");
+        }
+
+        private void CreateExecuteButton(IFlowNode node)
+        {
+            if (!node.IsFlowRoot) return;
+            var button = new Button(() => new Flow(Node.Graph, node).Execute()) {text = "Execute"};
+            titleButtonContainer.Add(button);
         }
 
         private void CreateFlowPorts(IFlowNode node)

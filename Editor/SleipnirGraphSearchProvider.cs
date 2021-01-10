@@ -32,7 +32,7 @@ namespace RedOwl.Sleipnir.Editor
             Entries = new List<SearchTreeEntry>();
         }
 
-        public void Add(SleipnirNodeInfo data)
+        public void Add(NodeInfo data)
         {
             Entries.Add(new SearchTreeEntry(new GUIContent(data.Name)){ userData = data, level = Section.level + 1});
         }
@@ -42,13 +42,13 @@ namespace RedOwl.Sleipnir.Editor
     {
         private SleipnirGraphViewBase _view;
         
-        private SleipnirGraphInfo _graphTypeData;
+        private GraphInfo _graphTypeData;
         private bool _useGraphTagMatching;
 
         public void Initialize(SleipnirGraphViewBase view)
         {
             _view = view;
-            bool found = SleipnirGraphReflector.GraphCache.Get(_view.Graph.GetType(), out _graphTypeData);
+            bool found = GraphInfo.Cache.Get(_view.Graph.GetType(), out _graphTypeData);
             _useGraphTagMatching = found && _graphTypeData?.Tags.Count > 0;
         }
         
@@ -71,14 +71,14 @@ namespace RedOwl.Sleipnir.Editor
 
         public bool OnSelectEntry(SearchTreeEntry entry, SearchWindowContext context)
         {
-            _view.CreateNode((SleipnirNodeInfo)entry.userData, context.screenMousePosition);
+            _view.CreateNode((NodeInfo)entry.userData, context.screenMousePosition);
             return true;
         }
 
         private IEnumerable<SearchGroup> GetSearchGroups()
         {
             Dictionary<SearchGroupKey, SearchGroup> groups = new Dictionary<SearchGroupKey, SearchGroup>();
-            foreach (var node in SleipnirGraphReflector.NodeCache.All)
+            foreach (var node in NodeInfo.Cache.All)
             {
                 if (_useGraphTagMatching && !_graphTypeData.Tags.Overlaps(node.Tags)) continue;
                 SearchGroup searchGroup = null;
