@@ -26,7 +26,7 @@ namespace RedOwl.Sleipnir.Editor
                     break;
                 case Graph graph:
                     var asset = ScriptableObject.CreateInstance<GraphAsset>();
-                    asset.name = graph.Title;
+                    asset.name = "SubGraph";
                     asset.Graph = graph;
                     SleipnirEditor.Open(asset, true);
                     break;

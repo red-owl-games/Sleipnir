@@ -134,3 +134,8 @@ In *Package Manager* click *Add package from git URL* and use the following:
 ```
 https://github.com/red-owl-games/Sleipnir.git
 ```
+
+### Things to checkout
+
+https://github.com/buunguyen/fasterflect
+http://introspectingcode.blogspot.com/2011/06/dynamically-compile-code-at-runtime.html

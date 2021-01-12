@@ -130,7 +130,7 @@ namespace RedOwl.Sleipnir.Editor
                     if (inputPort != null && outputPort != null)
                         AddElement(outputPort.ConnectTo(inputPort));
                     else
-                        Debug.Log("Unable To Make a Flow Port Connection");
+                        Debug.Log($"Unable To Make a Flow Port Connection | {flowOut} => {connection.Node}.{connection.Port}");
                 }
             }
         }

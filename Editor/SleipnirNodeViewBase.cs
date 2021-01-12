@@ -39,7 +39,7 @@ namespace RedOwl.Sleipnir.Editor
             ReflectionData = data;
             name = node.NodeId;
             SetPosition(new Rect(node.NodePosition, ReflectionData.Size));
-            title = $"{ReflectionData.Name}({name.Substring(0,8)})";
+            title = $"{ReflectionData.Name}";
             tooltip = ReflectionData.Help;
             if (!ReflectionData.Deletable)
             {
@@ -77,7 +77,12 @@ namespace RedOwl.Sleipnir.Editor
 #if ODIN_INSPECTOR
             var tree = Sirenix.OdinInspector.Editor.PropertyTree.Create(node);
             bool useUndo = node is Object;
-            extensionContainer.Add(new IMGUIContainer(() => tree.Draw(useUndo)) { name = "OdinTree"});
+            extensionContainer.Add(new IMGUIContainer(() =>
+            {
+                Sirenix.Utilities.Editor.GUIHelper.PushLabelWidth(100);
+                tree.Draw(useUndo);
+                Sirenix.Utilities.Editor.GUIHelper.PopLabelWidth();
+            }) { name = "OdinTree"});
 #else
             // TODO: Draw Property Field's with UI Elements
             // http://wiki.unity3d.com/index.php/ExposePropertiesInInspector_Generic

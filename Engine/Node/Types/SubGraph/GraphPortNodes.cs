@@ -3,9 +3,14 @@ using UnityEngine;
 
 namespace RedOwl.Sleipnir.Engine
 {
+    public interface IGraphPortNode
+    {
+        string Name { get; }
+    }
+    
     [Serializable]
     [Node("Common", Path = "Common/Graph Ports")]
-    public class GraphValueInPortNode : Node
+    public class GraphValueInPortNode : Node, IGraphPortNode
     {
         [ValueOut(GraphPort = true)] public ValuePort<string> Out;
         
@@ -19,19 +24,14 @@ namespace RedOwl.Sleipnir.Engine
             set
             {
                 name = value;
-                IsDefined = false;
+                // IsDefined = false;
             }
-        }
-        
-        protected override void OnDefinition()
-        {
-            //Out.Name = name;
         }
     }
     
     [Serializable]
     [Node("Common", Path = "Common/Graph Ports")]
-    public class GraphValueOutPortNode : Node
+    public class GraphValueOutPortNode : Node, IGraphPortNode
     {
         [ValueIn(GraphPort = true)] public ValuePort<string> In;
         
@@ -45,19 +45,14 @@ namespace RedOwl.Sleipnir.Engine
             set
             {
                 name = value;
-                IsDefined = false;
+                // IsDefined = false;
             }
-        }
-        
-        protected override void OnDefinition()
-        {
-            //In.Name = name;
         }
     }
     
     [Serializable]
     [Node("Common", Path = "Common/Graph Ports")]
-    public class GraphFlowInPortNode : Node
+    public class GraphFlowInPortNode : Node, IGraphPortNode
     {
         [FlowOut(GraphPort = true)] public FlowPort Out;
 
@@ -71,19 +66,14 @@ namespace RedOwl.Sleipnir.Engine
             set
             {
                 name = value;
-                IsDefined = false;
+                // IsDefined = false;
             }
-        }
-        
-        protected override void OnDefinition()
-        {
-            //Out.Name = name;
         }
     }
     
     [Serializable]
     [Node("Common", Path = "Common/Graph Ports")]
-    public class GraphFlowOutPortNode : Node
+    public class GraphFlowOutPortNode : Node, IGraphPortNode
     {
         [FlowIn(GraphPort = true)] public FlowPort In;
 
@@ -97,13 +87,8 @@ namespace RedOwl.Sleipnir.Engine
             set
             {
                 name = value;
-                IsDefined = false;
+                // IsDefined = false;
             }
-        }
-
-        protected override void OnDefinition()
-        {
-            //In.Name = name;
         }
     }
 }

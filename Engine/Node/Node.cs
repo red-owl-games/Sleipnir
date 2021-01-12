@@ -15,8 +15,6 @@ namespace RedOwl.Sleipnir.Engine
         Dictionary<string, IValuePort> ValueInPorts { get; }
         Dictionary<string, IValuePort> ValueOutPorts { get; }
         
-        bool IsDefined { get; }
-        
         void Definition(IGraph graph);
     }
 
@@ -68,6 +66,23 @@ namespace RedOwl.Sleipnir.Engine
         public Dictionary<string, IFlowPort> FlowOutPorts { get; protected set; }
 
         #region Definition
+        
+        public void Definition(IGraph graph)
+        {
+            // TODO: Increase Performance by Implementing an "IsDirty" system
+            Graph = graph;
+            try // TODO: can we scope this better?
+            {
+                DefineValuePorts();
+                DefineFlowPorts();
+                OnDefinition();
+            }
+            catch
+            {
+                Debug.LogWarning($"Failed to Define Node {GetType().FullName} | {NodeId}");
+                throw;
+            }
+        }
 
         private void DefineValuePorts()
         {
@@ -78,9 +93,10 @@ namespace RedOwl.Sleipnir.Engine
             {
                 var port = valuePort.GetOrCreatePort(this);
                 if (valuePort.GraphPort)
-                    (valuePort.Direction == PortDirection.Input ? Graph.ValueOutPorts : Graph.ValueInPorts).Add(
-                        valuePort.Name, port.GraphPort(Graph));
-
+                {
+                    var graphPort = port.Clone(Graph);
+                    (valuePort.Direction == PortDirection.Input ? Graph.ValueOutPorts : Graph.ValueInPorts).Add(graphPort.Name, graphPort);
+                }
                 (valuePort.Direction == PortDirection.Input ? ValueInPorts : ValueOutPorts).Add(valuePort.Name, port);
                 // Debug.Log($"{this} has Value Port '{valuePort.Name} | {valuePort.Direction}'");
             }
@@ -95,41 +111,17 @@ namespace RedOwl.Sleipnir.Engine
             {
                 var port = flowPort.GetOrCreatePort(this);
                 if (flowPort.GraphPort)
-                    (flowPort.Direction == PortDirection.Input ? Graph.FlowOutPorts : Graph.FlowInPorts).Add(flowPort.Name, port.GraphPort(Graph));
+                {
+                    var graphPort = port.Clone(Graph);
+                    (flowPort.Direction == PortDirection.Input ? Graph.FlowOutPorts : Graph.FlowInPorts).Add(graphPort.Name, graphPort);
+                }
                 (flowPort.Direction == PortDirection.Input ? FlowInPorts : FlowOutPorts).Add(flowPort.Name, port);
                 // Debug.Log($"{this} has Flow Port '{flowPort.Name} | {flowPort.Direction}'");
             }
         }
-        
-        [field: NonSerialized]
-        public bool IsDefined { get; protected set; }
 
-        public void Definition(IGraph graph)
-        {
-            BeforeDefinition();
-            if (IsDefined) return;
-            Graph = graph;
-            try
-            {
-                // TODO: can we scope this better?
-                DefineValuePorts();
-                DefineFlowPorts();
-                OnDefinition();
-                IsDefined = true;
-                AfterDefinition();
-            }
-            catch
-            {
-                Debug.LogWarning($"Failed to Define Node {GetType().FullName} | {NodeId}");
-                throw;
-            }
-        }
-
-        protected virtual void BeforeDefinition() {}
         protected virtual void OnDefinition() {}
-        
-        protected virtual void AfterDefinition() {}
-        
+
         #endregion
 
         #region Initialization
@@ -138,7 +130,7 @@ namespace RedOwl.Sleipnir.Engine
 
         public void Initialize(ref IFlow flow)
         {
-            try
+            try // TODO: can we scope this better?
             {
                 InitializePorts(ref flow);
                 OnInitialize(ref flow);

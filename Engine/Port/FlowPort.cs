@@ -8,8 +8,7 @@ namespace RedOwl.Sleipnir.Engine
     public interface IFlowPort : IPort
     {
         void Definition(INode node, IFlowPortAttribute info);
-        IFlowPort GraphPort(IGraph graph);
-        IFlowPort GraphReferencePort(GraphReferenceNode node);
+        IFlowPort Clone(IGraph graph);
         IEnumerable Execute();
         
     }
@@ -53,6 +52,7 @@ namespace RedOwl.Sleipnir.Engine
             Name = info.Name;
             Direction = info.Direction;
             Capacity = info.Capacity;
+            GraphPort = info.GraphPort;
             if (info.CallbackInfo == null) return;
             var parameters = info.CallbackInfo.GetParameters();
             if (parameters.Length != 1)
@@ -85,9 +85,9 @@ namespace RedOwl.Sleipnir.Engine
             if (_callbackType == CallbackTypes.None) Debug.LogWarning($"FlowPort Callback for '{node}.{info.CallbackInfo.Name}' did not have one of the following method signatures [Action<IFlow>, Func<IFlow, IFlowPort>, Func<IFlow, IEnumerable>]");
         }
 
-        public IFlowPort GraphPort(IGraph graph)
+        public IFlowPort Clone(IGraph graph)
         {
-            string newName = $"On {Name}";
+            string newName = (Node is IGraphPortNode graphPortNode) ? graphPortNode.Name : $"On {Name}";
             var port = new FlowPort
             {
                 Id = new PortId(graph.NodeId, newName),
@@ -109,14 +109,6 @@ namespace RedOwl.Sleipnir.Engine
             }
 
             return port;
-        }
-
-        public IFlowPort GraphReferencePort(GraphReferenceNode node)
-        {
-            Id = new PortId(node.NodeId, Name);
-            // TODO: I'm not sure this is safe in the grand scheme of things
-            Node = node;
-            return this;
         }
 
         public override void Initialize(ref IFlow flow)

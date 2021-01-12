@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -9,19 +10,32 @@ namespace RedOwl.Sleipnir.Engine
         object DefaultValue { get; }
         object WeakValue { get; }
         void Definition(INode node, IValuePortAttribute info);
-        IValuePort GraphPort(IGraph graph);
-        IValuePort GraphReferencePort(GraphReferenceNode node);
+        IValuePort Clone(IGraph graph);
+        IEnumerable Execute();
     }
 
     [Preserve]
     public class ValuePort<T> : Port, IValuePort
     {
         public object DefaultValue { get; private set; }
-        public object WeakValue => Flow != null && Flow.ContainsKey(Id) ? Flow.Get<object>(Id) : DefaultValue;
+        public object WeakValue => Value;
+        
+        private IValuePort Linked { get; set; }
         
         public T Value
         {
-            get => Flow != null && Flow.ContainsKey(Id) ? Flow.Get<T>(Id) : (T) DefaultValue;
+            get
+            {
+                if (Flow != null)
+                {
+                    if (Flow.ContainsKey(Id)) return Flow.Get<T>(Id);
+                    //Debug.Log($"Flow doesn't contain '{Id}'");
+                    return (T) DefaultValue;
+                }
+                //Debug.Log("Flow is Null");
+                return (T) DefaultValue;
+                //return Flow != null && Flow.ContainsKey(Id) ? Flow.Get<T>(Id) : (T) DefaultValue;
+            }
             set
             {
                 if (Flow == null)
@@ -34,7 +48,7 @@ namespace RedOwl.Sleipnir.Engine
                 }
             }
         }
-        
+
         [Preserve]
         public ValuePort()
         {
@@ -55,12 +69,13 @@ namespace RedOwl.Sleipnir.Engine
             Name = info.Name;
             Direction = info.Direction;
             Capacity = info.Capacity;
+            GraphPort = info.GraphPort;
             ValueType = typeof(T);
         }
-        
-        public IValuePort GraphPort(IGraph graph)
+
+        public IValuePort Clone(IGraph graph)
         {
-            var newName = $"{Name} {Direction.Flip()}";
+            string newName = (Node is IGraphPortNode graphPortNode) ? graphPortNode.Name : $"{Name} {Direction.Flip()}";
             var port = new ValuePort<T>()
             {
                 Id = new PortId(graph.NodeId, newName),
@@ -68,22 +83,77 @@ namespace RedOwl.Sleipnir.Engine
                 Name = newName,
                 Direction = Direction.Flip(),
                 Capacity = Capacity,
+                ValueType = ValueType,
+                DefaultValue = DefaultValue,
                 Flow = Flow,
             };
+            
+            switch (Direction)
+            {
+                case PortDirection.Input:
+                    //Debug.Log($"Linking {this} => {port}");
+                    Linked = port;
+                    break;
+                case PortDirection.Output:
+                    //Debug.Log($"Linking {port} => {this}");
+                    port.Linked = this;
+                    break;
+            }
 
             return port;
-        }
-
-        public IValuePort GraphReferencePort(GraphReferenceNode node)
-        {
-            Id = new PortId(node.NodeId, Name);
-            return this;
         }
 
         public override void Initialize(ref IFlow flow)
         {
             Flow = flow;
-            Flow.Set(Id, (T)DefaultValue);
+            //Flow.Set(Id, (T)DefaultValue);
+        }
+
+        public IEnumerable Execute()
+        {
+            // TODO: Refactor This - There has to be a better way
+            switch (Direction)
+            {
+                case PortDirection.Input:
+                    foreach (var connection in Graph.ValueInConnections.SafeGet(Id))
+                    {
+                        var nextNode = Graph.GetNode(connection.Node); //  TODO: Needs saftey check?
+                        var nextPort = nextNode?.ValueOutPorts[connection.Port]; // TODO: Needs saftey check?
+                        if (nextNode != null && nextPort != null)
+                        {
+                            yield return nextPort;
+                            Flow.Set(Id, nextPort.WeakValue);
+                        }
+                    }
+                    if (Linked != null)
+                    {
+                        // Debug.Log($"[Input] Has Linked Port | {this} => {Linked}");
+                        Flow.Set(Linked.Id, Value);
+                    }
+                    break;
+                case PortDirection.Output:
+                    Flow.Set(Id, Value);
+                    if (Linked != null)
+                    {
+                        // Debug.Log($"[Output] Has Linked Port | {this} => {Linked}");
+                        Flow.Set(Linked.Id, Value);
+                    }
+                    break;
+            }
+            /*
+
+            if (Direction == PortDirection.Input)
+            {
+                foreach (var connection in Graph.ValueInConnections.SafeGet(Id))
+                {
+                    var nextNode = Graph.GetNode(connection.Node); //  TODO: Needs saftey check?
+                    var output = nextNode.ValueOutPorts[connection.Port]; // TODO: Needs saftey check?
+                    Debug.Log($"Pulled Value for '{this}' from '{output}'");
+                    Flow.Set(Id, output.WeakValue);
+                }
+            }
+            */
+            yield break;
         }
 
         public static implicit operator T(ValuePort<T> self) => self.Value;

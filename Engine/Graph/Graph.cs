@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using UnityEngine;
 
 namespace RedOwl.Sleipnir.Engine
 {
     public interface IGraph : IFlowNode
     {
-        string Title { get; set; }
         IEnumerable<INode> Nodes { get; }
         int NodeCount { get; }
         INode GetNode(string id);
@@ -27,22 +27,20 @@ namespace RedOwl.Sleipnir.Engine
     [Node("Common", Name = "SubGraph", Path = "Common")]
     public class Graph : Node, IGraph
     {
-        [field: SerializeField] public string Title { get; set; } = "Sub Graph";
-        
         [SerializeReference]
-        //[HideInInspector] 
+        [HideInInspector] 
         private List<INode> _nodes;
 
         public IEnumerable<INode> Nodes => _nodes;
         public int NodeCount => _nodes.Count;
 
         [SerializeField]
-        //[HideInInspector]
+        [HideInInspector]
         private ConnectionsGraph valueInConnections;
         public ConnectionsGraph ValueInConnections => valueInConnections;
         
         [SerializeField]
-        //[HideInInspector]
+        [HideInInspector]
         private ConnectionsGraph flowOutConnections;
         public ConnectionsGraph FlowOutConnections => flowOutConnections;
 
@@ -65,20 +63,6 @@ namespace RedOwl.Sleipnir.Engine
             }
         }
 
-        // TODO: Graphs need their own "Definition" flow separate from Nodes
-        protected override void BeforeDefinition()
-        {
-            // If any node in the graph isn't defined then make the graph redefine itself
-            foreach (var node in _nodes)
-            {
-                if (node is Graph subgraph) subgraph.BeforeDefinition();
-                if (node.IsDefined) continue;
-                // Debug.Log($"Node '{node}' was marked as Not Defined - Lets Redefining Graph");
-                IsDefined = false;
-                return;
-            }
-        }
-
         protected override void OnDefinition()
         {
             if (GraphInfo.Cache.Get(GetType(), out var data))
@@ -86,7 +70,6 @@ namespace RedOwl.Sleipnir.Engine
                 EnsureRequiredNodes(data);
             }
             
-            // TODO: Generate Dynamic Ports based on graph's PortNodes
             foreach (var node in _nodes)
             {
                 node.Definition(this);
@@ -101,6 +84,7 @@ namespace RedOwl.Sleipnir.Engine
             }
         }
 
+        [CanBeNull]
         public INode GetNode(string id)
         {
             foreach (var node in _nodes)
@@ -168,7 +152,7 @@ namespace RedOwl.Sleipnir.Engine
             _nodes = new List<INode>();
             valueInConnections = new ConnectionsGraph();
             flowOutConnections = new ConnectionsGraph();
-            IsDefined = false;
+            // IsDefined = false;
         }
 
         private void CleanupFlowPortConnections(INode target)
@@ -209,7 +193,7 @@ namespace RedOwl.Sleipnir.Engine
 
         public override string ToString()
         {
-            return $"{GetType().Name}({Title}, {NodeId.Substring(0,8)})";
+            return $"{GetType().Name}({NodeId.Substring(0,8)})";
         }
     }
     

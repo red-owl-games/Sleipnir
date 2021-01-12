@@ -12,11 +12,6 @@ namespace RedOwl.Sleipnir.Engine
         [SerializeReference] 
         public IGraph Graph;
 
-        private void OnValidate()
-        {
-            Graph.Title = name;
-        }
-
         [Conditional("UNITY_EDITOR")]
         public static void Save<T>(T graph, string name = null, string relativeFolder = null) where T : IGraph
         {

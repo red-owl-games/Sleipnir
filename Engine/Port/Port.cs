@@ -4,7 +4,7 @@ namespace RedOwl.Sleipnir.Engine
 {
     public interface IPort
     {
-        PortId Id { get; }
+        PortId Id { get; set; }
         
         IGraph Graph { get; }
         INode Node { get; }
@@ -14,6 +14,7 @@ namespace RedOwl.Sleipnir.Engine
         PortDirection Direction { get; }
          
         PortCapacity Capacity { get; }
+        bool GraphPort { get; }
         
         Type ValueType { get; }
 
@@ -24,16 +25,17 @@ namespace RedOwl.Sleipnir.Engine
 
     public abstract class Port : IPort
     {
-        public PortId Id { get; protected set; }
+        public PortId Id { get; set; }
         public IGraph Graph => Node.Graph;
-        public INode Node { get; protected set; }
-        public string Name { get; protected set; }
+        public INode Node { get; internal set; }
+        public string Name { get; internal set; }
         public PortDirection Direction { get; protected set; }
         public PortCapacity Capacity { get; protected set; }
+        public bool GraphPort { get; protected set; }
         public Type ValueType { get; protected set; }
         public IFlow Flow { get; protected set; }
         public abstract void Initialize(ref IFlow flow);
         
-        public override string ToString() => $"{Graph} {Node} {GetType().Name}[{Name} | {Direction} | {Capacity}]";
+        public override string ToString() => $"{Node} {GetType().Name}[{Name} | {Direction} | {Capacity}]";
     }
 }

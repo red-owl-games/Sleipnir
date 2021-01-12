@@ -47,7 +47,6 @@ namespace RedOwl.Sleipnir.Engine
         {
             var type = typeof(T);
             var value = this[key];
-            
             switch (value)
             {
                 case null when type.IsValueType:
@@ -125,6 +124,7 @@ namespace RedOwl.Sleipnir.Engine
 
         private void WalkValuePorts(INode node)
         {
+            // Debug.Log($"Walking Node '{node}' for Values");
             foreach (var port in node.ValueInPorts.Values)
             {
                 WalkValuePort(port);
@@ -133,12 +133,18 @@ namespace RedOwl.Sleipnir.Engine
 
         private void WalkValuePort(IValuePort port)
         {
-            foreach (var connection in port.Graph.ValueInConnections.SafeGet(port.Id))
+            // Debug.Log($"Walking Value Port {port}");
+            foreach (var next in port.Execute())
             {
-                var nextNode = port.Graph.GetNode(connection.Node); //  TODO: Needs saftey check?
-                var output = nextNode.ValueOutPorts[connection.Port]; // TODO: Needs saftey check?
-                // Debug.Log($"Pulled Value for '{valuePort}' from '{output}'");
-                Set(port.Id, output.WeakValue);
+                // TODO: Handle Yield Instructions / Custom Yield Instructions
+                if (next is IValuePort nextPort)
+                {
+                    // Debug.Log($"Moving Towards Next Port {nextPort}");
+                    if (nextPort.Direction == PortDirection.Output)
+                    {
+                        WalkValuePort(nextPort);
+                    }
+                }
             }
         }
 
