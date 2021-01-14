@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace RedOwl.Sleipnir.Engine
 {
-    // TODO: Have a bool when True it will expose this valueNode as a port?  What about input vs output?
-
+    #region Base
+    
     [Serializable]
     [Node("Common", Path = "Common/Value")]
     public abstract class ValueNode<TValue> : Node
@@ -29,7 +29,9 @@ namespace RedOwl.Sleipnir.Engine
         }
     }
     
-    // Primatives
+    #endregion
+    
+    #region Primatives
     
     public class StringValueNode : ValueNode<string>
     {
@@ -109,7 +111,9 @@ namespace RedOwl.Sleipnir.Engine
         public ByteValueNode(byte defaultValue) : base(defaultValue) { }
     }
     
-    // Unity Types
+    #endregion
+    
+    #region Unity
     
     public class ColorValueNode : ValueNode<Color>
     {
@@ -182,4 +186,6 @@ namespace RedOwl.Sleipnir.Engine
         public RectIntValueNode() : this(default) {}
         public RectIntValueNode(RectInt defaultValue) : base(defaultValue) { }
     }
+    
+    #endregion
 }

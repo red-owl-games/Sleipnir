@@ -19,7 +19,7 @@ namespace RedOwl.Sleipnir.Engine
         public FieldInfo Info { get; private set; }
         public string Name { get; set; } = null;
         public abstract PortDirection Direction { get; }
-        public PortCapacity Capacity { get; set; } = PortCapacity.Multi;
+        public abstract PortCapacity Capacity { get; set; }
         public bool GraphPort { get; set; } = false;
         
         public void SetInfo(FieldInfo info)

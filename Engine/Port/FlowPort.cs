@@ -87,7 +87,7 @@ namespace RedOwl.Sleipnir.Engine
 
         public IFlowPort Clone(IGraph graph)
         {
-            string newName = (Node is IGraphPortNode graphPortNode) ? graphPortNode.Name : $"On {Name}";
+            string newName = (Node is IGraphFlowPortNode graphPortNode) ? graphPortNode.Name : $"On {Name}";
             var port = new FlowPort
             {
                 Id = new PortId(graph.NodeId, newName),

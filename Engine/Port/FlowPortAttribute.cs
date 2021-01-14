@@ -27,6 +27,8 @@ namespace RedOwl.Sleipnir.Engine
     {
         public override PortDirection Direction => PortDirection.Input;
 
+        public override PortCapacity Capacity { get; set; } = PortCapacity.Multi;
+
         public FlowInAttribute() {}
         public FlowInAttribute(string callback = null)
         {
@@ -40,6 +42,8 @@ namespace RedOwl.Sleipnir.Engine
     public sealed class FlowOutAttribute : FlowPortAttribute
     {
         public override PortDirection Direction => PortDirection.Output;
+        
+        public override PortCapacity Capacity { get; set; } = PortCapacity.Multi;
 
         public FlowOutAttribute() {}
         public FlowOutAttribute(string callback = null)

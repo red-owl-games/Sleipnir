@@ -36,6 +36,6 @@ namespace RedOwl.Sleipnir.Engine
         public IFlow Flow { get; protected set; }
         public abstract void Initialize(ref IFlow flow);
         
-        public override string ToString() => $"{Node} {GetType().Name}[{Name} | {Direction} | {Capacity}]";
+        public override string ToString() => $"{Node}.{Name}({Direction}|{Capacity})";
     }
 }
