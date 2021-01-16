@@ -86,6 +86,7 @@ namespace RedOwl.Sleipnir.Engine
 
         private void Walk(IFlow flow)
         {
+            // TODO: there appears to be an initialization bug with ValueNodes and their default value not getting setup
             flow.Graph.Initialize(ref flow);
             foreach (var rootNode in flow.RootNodes)
             {

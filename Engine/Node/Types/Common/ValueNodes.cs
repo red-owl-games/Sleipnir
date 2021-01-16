@@ -1,4 +1,5 @@
 using System;
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace RedOwl.Sleipnir.Engine
@@ -11,7 +12,7 @@ namespace RedOwl.Sleipnir.Engine
     {
         [ValueOut] public ValuePort<TValue> Value;
 
-        [SerializeField]
+        [SerializeField, OnValueChanged("MarkDirty")]
         private TValue defaultValue;
         protected ValueNode(TValue defaultValue = default)
         {

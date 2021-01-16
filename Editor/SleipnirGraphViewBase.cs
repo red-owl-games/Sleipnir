@@ -11,7 +11,7 @@ namespace RedOwl.Sleipnir.Editor
 {
     public abstract class SleipnirGraphViewBase : GraphView
     {
-        public GraphAsset GraphAsset { get; protected set; }
+        public IGraphAsset GraphAsset { get; protected set; }
         public IGraph Graph => GraphAsset.Graph;
         public GridBackground GridBackground { get; private set; }
         public SleipnirGraphSearchProvider SearchProvider { get; private set; }
@@ -57,7 +57,7 @@ namespace RedOwl.Sleipnir.Editor
 
         protected void RecordUndo(string title)
         {
-            if (GraphAsset != null) Undo.RecordObject(GraphAsset, title);
+            if (GraphAsset != null) Undo.RecordObject((ScriptableObject)GraphAsset, title);
         }
 
         public void OpenSearch(Vector2 screenPosition, PortView port = null)

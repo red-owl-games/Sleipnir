@@ -10,8 +10,8 @@ namespace RedOwl.Sleipnir.Editor
     // TODO: what happens when we delete the GraphReference this is current viewing?!
     public class SleipnirWindow : EditorWindow
     {
-        private Stack<GraphAsset> _graphs;
-        private GraphAsset _current;
+        private Stack<IGraphAsset> _graphs;
+        private IGraphAsset _current;
         private IGraphView _view;
 
         private Toolbar _toolbar;
@@ -21,7 +21,7 @@ namespace RedOwl.Sleipnir.Editor
         {
             rootVisualElement.styleSheets.Add(Resources.Load<StyleSheet>("SleipnirWindow"));
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-            _graphs = new Stack<GraphAsset>(5);
+            _graphs = new Stack<IGraphAsset>(5);
             CreateView();
             CreateToolbar();
             Undo.undoRedoPerformed += Reload;
@@ -51,7 +51,7 @@ namespace RedOwl.Sleipnir.Editor
             LoadCurrent();
         }
 
-        internal void Load(GraphAsset asset, bool nested = false)
+        internal void Load(IGraphAsset asset, bool nested = false)
         {
             if (asset == null) return;
             _view.Save();

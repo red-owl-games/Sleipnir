@@ -16,6 +16,7 @@ namespace RedOwl.Sleipnir.Engine
         Dictionary<string, IValuePort> ValueOutPorts { get; }
         
         void Definition(IGraph graph);
+        void MarkDirty();
     }
 
     public interface IFlowNode : INode
@@ -64,6 +65,22 @@ namespace RedOwl.Sleipnir.Engine
         
         public Dictionary<string, IFlowPort> FlowInPorts { get; protected set; }
         public Dictionary<string, IFlowPort> FlowOutPorts { get; protected set; }
+
+        #region Dirty
+
+        public void MarkDirty()
+        {
+            // Debug.Log($"Marking Node '{this}' dirty!");
+            OnDirty();
+            foreach (var port in ValueOutPorts.Values)
+            {
+                port.MarkDirty();
+            }
+        }
+        
+        protected virtual void OnDirty() {}
+
+        #endregion
 
         #region Definition
         

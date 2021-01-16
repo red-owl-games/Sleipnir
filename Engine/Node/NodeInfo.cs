@@ -49,9 +49,12 @@ namespace RedOwl.Sleipnir.Engine
             
             // Debug.Log($"Caching Node '{Type}'");
             
+            var methodTable = Type.GetMethodTable(BindingFlags);
+            methodTable.Add(string.Empty, null);
+            
             ExtractSettings(attr);
-            ExtractValuePorts();
-            ExtractFlowPorts();
+            ExtractValuePorts(methodTable);
+            ExtractFlowPorts(methodTable);
             ExtractContextMethods();
             ExtractViews();
 
@@ -70,7 +73,7 @@ namespace RedOwl.Sleipnir.Engine
             Size = attr.Size;
         }
 
-        private void ExtractValuePorts()
+        private void ExtractValuePorts(Dictionary<string, MethodInfo> methodTable)
         {
             ValuePorts = new List<IValuePortAttribute>();
             // This OrderBy sorts the fields by the order they are defined in the code with subclass fields first
@@ -79,25 +82,24 @@ namespace RedOwl.Sleipnir.Engine
                 foreach (var attribute in info.GetCustomAttributes<ValuePortAttribute>(true))
                 {
                     attribute.SetInfo(info);
+                    attribute.SetCallbackInfo(methodTable[attribute.Callback]);
                     // Debug.Log($"Extracting Value Port '{attribute.Name} {attribute.Direction}'");
                     ValuePorts.Add(attribute);
                 }
             }
         }
 
-        private void ExtractFlowPorts()
+        private void ExtractFlowPorts(Dictionary<string, MethodInfo> methodTable)
         {
             FlowPorts = new List<IFlowPortAttribute>();
             // This OrderBy sorts the fields by the order they are defined in the code with subclass fields first
-            var methodInfos = Type.GetMethodTable(BindingFlags);
-            methodInfos.Add(string.Empty, null);
             foreach (var fieldInfo in Type.GetFields(BindingFlags).OrderBy(field => field.MetadataToken))
             {
                 foreach (var attribute in fieldInfo.GetCustomAttributes<FlowPortAttribute>(true))
                 {
                     attribute.SetInfo(fieldInfo);
+                    attribute.SetCallbackInfo(methodTable[attribute.Callback]);
                     // Debug.Log($"Extracting Flow Port '{attribute.Name} {attribute.Direction}'");
-                    attribute.SetCallbackInfo(methodInfos[attribute.Callback]);
                     FlowPorts.Add(attribute);
                 }
             }

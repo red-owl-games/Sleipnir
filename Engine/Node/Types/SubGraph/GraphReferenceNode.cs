@@ -64,6 +64,8 @@ namespace RedOwl.Sleipnir.Engine
         public Dictionary<string, IValuePort> ValueOutPorts => Asset.Graph.ValueOutPorts;
         public void Definition(IGraph graph) => Asset.Graph.Definition(graph);
 
+        public void MarkDirty() => Asset.Graph.MarkDirty();
+
         #endregion
         
 

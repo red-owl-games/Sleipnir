@@ -13,12 +13,12 @@ namespace RedOwl.Sleipnir.Editor
         [OnOpenAsset(0)]
         public static bool OnOpenAsset(int instanceID, int line)
         {
-            if (!(EditorUtility.InstanceIDToObject(instanceID) is GraphAsset asset)) return false;
+            if (!(EditorUtility.InstanceIDToObject(instanceID) is IGraphAsset asset)) return false;
             GetOrCreate().Load(asset);
             return true;
         }
         
-        public static void Open(GraphAsset asset, bool nested = false)
+        public static void Open(IGraphAsset asset, bool nested = false)
         {
             GetOrCreate().Load(asset, nested);
         }

@@ -4,7 +4,7 @@ namespace RedOwl.Sleipnir.Editor
 {
     public class SleipnirGraphViewPlaymode : SleipnirGraphViewBase<SleipnirNodeViewPlaymode>, IGraphView
     {
-        public void Load(GraphAsset asset)
+        public void Load(IGraphAsset asset)
         {
             CreateGridBackground();
         }

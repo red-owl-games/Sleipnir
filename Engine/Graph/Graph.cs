@@ -20,6 +20,8 @@ namespace RedOwl.Sleipnir.Engine
         ConnectionsGraph FlowOutConnections { get; }
         void Connect(IPort output, IPort input);
         void Disconnect(IPort output, IPort input);
+        
+        void NotifyDirty();
     }
 
     [Serializable]
@@ -62,6 +64,21 @@ namespace RedOwl.Sleipnir.Engine
                 }
             }
         }
+
+        protected override void OnDirty()
+        {
+            foreach (var node in _nodes)
+            {
+                node.MarkDirty();
+            }
+        }
+
+        public void NotifyDirty()
+        {
+            OnGraphChanged();
+        }
+        
+        protected virtual void OnGraphChanged() {}
 
         protected override void OnDefinition()
         {

@@ -47,16 +47,17 @@ namespace RedOwl.Sleipnir.Editor
 
         public override void Save()
         {
-            if (GraphAsset == null) return;
-            // TODO: Purge Keys from connections tables that have no values in their port collection?
-            EditorUtility.SetDirty(GraphAsset);
-            AssetDatabase.SaveAssets();
+            if (GraphAsset is ScriptableObject so && so != null)
+            {
+                // TODO: Purge Keys from connections tables that have no values in their port collection?
+                EditorUtility.SetDirty(so);
+                AssetDatabase.SaveAssets();
+            }
         }
         
-        public void Load(GraphAsset asset)
+        public void Load(IGraphAsset asset)
         {
             if (asset == null) return;
-            if (asset.Graph == null) asset.Graph = new Graph();
             GraphAsset = asset;
             Reload();
         }
@@ -213,6 +214,7 @@ namespace RedOwl.Sleipnir.Editor
             if (changeMade)
             {
                 Save();
+                Graph.MarkDirty();
             }
             
             return change;

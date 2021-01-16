@@ -38,7 +38,11 @@ namespace RedOwl.Sleipnir.Editor
             userData = node;
             ReflectionData = data;
             name = node.NodeId;
-            SetPosition(new Rect(node.NodePosition, ReflectionData.Size));
+            style.position = Position.Absolute;
+            style.left = node.NodePosition.x;
+            style.top = node.NodePosition.y;
+            style.minWidth = data.Size.x;
+            style.minHeight = data.Size.y;
             title = $"{ReflectionData.Name}";
             tooltip = ReflectionData.Help;
             if (!ReflectionData.Deletable)

@@ -13,14 +13,6 @@ namespace RedOwl.Sleipnir.Engine
         
     }
 
-    public enum CallbackTypes
-    {
-        None,
-        Simple,
-        Sync,
-        Async,
-    }
-
     [Preserve]
     public class FlowPort : Port, IFlowPort
     {
@@ -31,6 +23,14 @@ namespace RedOwl.Sleipnir.Engine
         private static readonly Type SimpleCallbackType = typeof(Action<IFlow>);
         private static readonly Type SyncCallbackType = typeof(Func<IFlow, IFlowPort>);
         private static readonly Type AsyncCallbackType = typeof(Func<IFlow, IEnumerable>);
+        
+        public enum CallbackTypes
+        {
+            None,
+            Simple,
+            Sync,
+            Async,
+        }
         
         private IFlowPort Linked { get; set; }
 
