@@ -24,7 +24,7 @@ namespace RedOwl.Sleipnir.Engine
 
         public bool Moveable { get; set; }
         
-        public Vector2 Size { get; set; }
+        public Vector2 MinSize { get; set; }
         
         public bool IsFlowRoot { get; set; }
         
@@ -70,7 +70,7 @@ namespace RedOwl.Sleipnir.Engine
             Deletable = attr.Deletable;
             Moveable = attr.Moveable;
             IsFlowRoot = attr.IsFlowRoot;
-            Size = attr.Size;
+            MinSize = attr.MinSize;
         }
 
         private void ExtractValuePorts(Dictionary<string, MethodInfo> methodTable)

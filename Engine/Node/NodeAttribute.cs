@@ -29,12 +29,11 @@ namespace RedOwl.Sleipnir.Engine
         
         public bool IsFlowRoot { get; set; } = false;
 
-        // TODO: Rename this to MinWidth/MinHeight
-        public float Width { get; set; } = 50;
+        public float MinWidth { get; set; } = 50;
         
-        public float Height { get; set; } = 10;
+        public float MinHeight { get; set; } = 10;
         
-        public Vector2 Size => new Vector2(Width, Height);
+        public Vector2 MinSize => new Vector2(MinWidth, MinHeight);
         
         public NodeAttribute(params string[] tags)
         {

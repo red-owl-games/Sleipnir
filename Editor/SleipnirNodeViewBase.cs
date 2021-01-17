@@ -41,8 +41,8 @@ namespace RedOwl.Sleipnir.Editor
             style.position = Position.Absolute;
             style.left = node.NodePosition.x;
             style.top = node.NodePosition.y;
-            style.minWidth = data.Size.x;
-            style.minHeight = data.Size.y;
+            style.minWidth = data.MinSize.x;
+            style.minHeight = data.MinSize.y;
             title = $"{ReflectionData.Name}";
             tooltip = ReflectionData.Help;
             if (!ReflectionData.Deletable)
