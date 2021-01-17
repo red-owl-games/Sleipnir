@@ -12,10 +12,6 @@ namespace RedOwl.Sleipnir.Engine
 
     public abstract class ValuePortAttribute : PortAttribute, IValuePortAttribute
     {
-        // TODO: Pure value port graphs have no way to "calculating" values
-        // Maybe bringing this inline with flow ports would allow for port class simplification
-        // any port can "execute" - flow ports just do something different then value ports?
-
         public string Callback { get; set; } = string.Empty;
 
         public MethodInfo CallbackInfo { get; private set; } = null;

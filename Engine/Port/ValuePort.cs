@@ -41,7 +41,7 @@ namespace RedOwl.Sleipnir.Engine
         public object WeakValue => Value;
         
         
-        
+        // TODO: Should we have ValuePorts actually store a value internally rather then reaching out to the flow?
         public T Value
         {
             get
