@@ -51,7 +51,7 @@ namespace RedOwl.Sleipnir.Engine
             Clear();
         }
 
-        private void EnsureRequiredNodes(GraphInfo data)
+        private void EnsureRequiredNodes(GraphAttribute data)
         {
             foreach (var attribute in data.RequiredNodes)
             {
@@ -59,6 +59,7 @@ namespace RedOwl.Sleipnir.Engine
                 if (nodes.Count == 0)
                 {
                     var node = (INode)Activator.CreateInstance(attribute.Type);
+                    // TODO: Change capabilities of required node to not be moveable or deleteable
                     Add(node); // Definition & Initialize are called here
                     node.NodePosition = attribute.Position;
                 }
@@ -82,7 +83,7 @@ namespace RedOwl.Sleipnir.Engine
 
         protected override void OnDefinition()
         {
-            if (GraphInfo.Cache.Get(GetType(), out var data))
+            if (GraphAttribute.Cache.TryGet(GetType(), out var data))
             {
                 EnsureRequiredNodes(data);
             }

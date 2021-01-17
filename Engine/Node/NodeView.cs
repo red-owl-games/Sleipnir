@@ -12,7 +12,7 @@ namespace RedOwl.Sleipnir.Engine
         VisualElement FlowInPortContainer { get; }
         VisualElement FlowOutPortContainer { get; }
 
-        void Initialize(INode node, NodeInfo info);
+        void Initialize(INode node, NodeAttribute info);
         Rect GetPosition();
         void SetPosition(Rect position);
     }
@@ -26,7 +26,7 @@ namespace RedOwl.Sleipnir.Engine
         public VisualElement FlowInPortContainer { get; }
         public VisualElement FlowOutPortContainer { get; }
 
-        public void Initialize(INode node, NodeInfo info)
+        public void Initialize(INode node, NodeAttribute info)
         {
             
         }

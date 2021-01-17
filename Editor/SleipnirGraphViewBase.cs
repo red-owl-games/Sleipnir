@@ -44,7 +44,7 @@ namespace RedOwl.Sleipnir.Editor
             nodeCreationRequest = ctx => SearchWindow.Open(new SearchWindowContext(ctx.screenMousePosition), SearchProvider);
         }
         
-        public void CreateNode(NodeInfo data, Vector2 position)
+        public void CreateNode(NodeAttribute data, Vector2 position)
         {
             RecordUndo("Create Node");
             var node = (INode)Activator.CreateInstance(data.Type);
@@ -78,8 +78,8 @@ namespace RedOwl.Sleipnir.Editor
     {
         protected override void CreateNodeView(INode node)
         {
-            var info = NodeInfo.Cache.Get(node.GetType());
-            GraphElement element = info.EditorNodeView != null ? (GraphElement)Activator.CreateInstance(info.EditorNodeView) : new TNodeView();
+            var info = NodeAttribute.Cache[node.GetType()];
+            GraphElement element = info.EditorView != null ? (GraphElement)Activator.CreateInstance(info.EditorView) : new TNodeView();
             if (element is IEditorNodeView editorView) editorView.EdgeListener = EdgeConnectorListener;
             if (element is INodeView nodeView)
             {

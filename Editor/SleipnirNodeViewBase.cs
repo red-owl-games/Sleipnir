@@ -1,5 +1,4 @@
 using RedOwl.Sleipnir.Engine;
-using Sirenix.OdinInspector;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -22,7 +21,7 @@ namespace RedOwl.Sleipnir.Editor
         public VisualElement FlowOutPortContainer { get; private set; }
         public INode Node => (INode) userData;
         
-        public NodeInfo ReflectionData { get; private set; }
+        public NodeAttribute ReflectionData { get; private set; }
 
         public bool IsMoveable => ReflectionData.Moveable;
         
@@ -33,7 +32,7 @@ namespace RedOwl.Sleipnir.Editor
         protected virtual void OnError() { }
         #endregion
 
-        public void Initialize(INode node, NodeInfo data)
+        public void Initialize(INode node, NodeAttribute data)
         {
             userData = node;
             ReflectionData = data;
@@ -44,7 +43,7 @@ namespace RedOwl.Sleipnir.Editor
             style.minWidth = data.MinSize.x;
             style.minHeight = data.MinSize.y;
             title = $"{ReflectionData.Name}";
-            tooltip = ReflectionData.Help;
+            tooltip = ReflectionData.Tooltip;
             if (!ReflectionData.Deletable)
             {
                 capabilities &= ~Capabilities.Deletable;

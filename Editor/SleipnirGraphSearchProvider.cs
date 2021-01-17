@@ -32,7 +32,7 @@ namespace RedOwl.Sleipnir.Editor
             Entries = new List<SearchTreeEntry>();
         }
 
-        public void Add(NodeInfo data)
+        public void Add(NodeAttribute data)
         {
             Entries.Add(new SearchTreeEntry(new GUIContent(data.Name)){ userData = data, level = Section.level + 1});
         }
@@ -42,13 +42,13 @@ namespace RedOwl.Sleipnir.Editor
     {
         private SleipnirGraphViewBase _view;
         
-        private GraphInfo _graphTypeData;
+        private GraphAttribute _graphTypeData;
         private bool _useGraphTagMatching;
 
         public void Initialize(SleipnirGraphViewBase view)
         {
             _view = view;
-            bool found = GraphInfo.Cache.Get(_view.Graph.GetType(), out _graphTypeData);
+            bool found = GraphAttribute.Cache.TryGet(_view.Graph.GetType(), out _graphTypeData);
             _useGraphTagMatching = found && _graphTypeData?.Tags.Count > 0;
         }
         
@@ -71,20 +71,20 @@ namespace RedOwl.Sleipnir.Editor
 
         public bool OnSelectEntry(SearchTreeEntry entry, SearchWindowContext context)
         {
-            _view.CreateNode((NodeInfo)entry.userData, context.screenMousePosition);
+            _view.CreateNode((NodeAttribute)entry.userData, context.screenMousePosition);
             return true;
         }
 
         private IEnumerable<SearchGroup> GetSearchGroups()
         {
             Dictionary<SearchGroupKey, SearchGroup> groups = new Dictionary<SearchGroupKey, SearchGroup>();
-            foreach (var node in NodeInfo.Cache.All)
+            foreach (var node in NodeAttribute.Cache.All)
             {
                 if (_useGraphTagMatching && !_graphTypeData.Tags.Overlaps(node.Tags)) continue;
                 SearchGroup searchGroup = null;
                 int depth = 1;
                 
-                foreach (string subsection in node.Path)
+                foreach (string subsection in node.Path.Split('/'))
                 {
                     var key = new SearchGroupKey(subsection, depth);
                     if (!groups.TryGetValue(key, out searchGroup))

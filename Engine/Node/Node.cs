@@ -105,7 +105,7 @@ namespace RedOwl.Sleipnir.Engine
         {
             ValueInPorts = new Dictionary<string, IValuePort>();
             ValueOutPorts = new Dictionary<string, IValuePort>();
-            if (!NodeInfo.Cache.Get(GetType(), out var data)) return;
+            if (!NodeAttribute.Cache.TryGet(GetType(), out var data)) return;
             foreach (var valuePort in data.ValuePorts)
             {
                 var port = valuePort.GetOrCreatePort(this);
@@ -123,7 +123,7 @@ namespace RedOwl.Sleipnir.Engine
         {
             FlowInPorts = new Dictionary<string, IFlowPort>();
             FlowOutPorts = new Dictionary<string, IFlowPort>();
-            if (!NodeInfo.Cache.Get(GetType(), out var data)) return;
+            if (!NodeAttribute.Cache.TryGet(GetType(), out var data)) return;
             foreach (var flowPort in data.FlowPorts)
             {
                 var port = flowPort.GetOrCreatePort(this);
@@ -143,7 +143,7 @@ namespace RedOwl.Sleipnir.Engine
 
         #region Initialization
         
-        public bool IsFlowRoot => NodeInfo.Cache.Get(GetType(), out var data) && data.IsFlowRoot;
+        public bool IsFlowRoot => NodeAttribute.Cache.TryGet(GetType(), out var data) && data.IsFlowRoot;
 
         public void Initialize(ref IFlow flow)
         {

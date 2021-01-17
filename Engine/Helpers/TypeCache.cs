@@ -1,24 +1,27 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 
 namespace RedOwl.Sleipnir.Engine
 {
-    public interface ITypeStorage
+    public class TypeCache<TSearch, TStorage> where TStorage : Attribute
     {
-        bool ShouldCache(Type type);
-    }
-    
-    public class TypeCache<T, TStorage> where TStorage : ITypeStorage, new()
-    {
-        private Dictionary<string, TStorage> _cache;
+        public delegate bool TypeCachePredicate(Type type, ref TStorage storage, out Type key);
+        
+        private bool _initialized;
+        private readonly Dictionary<Type, TStorage> _cache;
+        private readonly TypeCachePredicate _predicate;
         
         public IEnumerable<string> Names
         {
             get
             {
                 ShouldBuildCache();
-                return _cache.Keys;
+                foreach (var type in _cache.Keys)
+                {
+                    yield return type.FullName;
+                }
             }
         }
         
@@ -31,35 +34,50 @@ namespace RedOwl.Sleipnir.Engine
             }
         }
 
-        public bool Get(Type type, out TStorage output)
+        public TStorage this[Type key]
+        {
+            get
+            {
+                ShouldBuildCache();
+                return _cache[key];
+            }
+        }
+
+        public TypeCache(TypeCachePredicate predicate)
+        {
+            _initialized = false;
+            _cache = new Dictionary<Type, TStorage>();
+            _predicate = predicate;
+        }
+
+        public TStorage Get<T>() => this[typeof(T)];
+        
+        public bool TryGet(Type type, out TStorage output)
         {
             ShouldBuildCache();
-            return _cache.TryGetValue(type.SafeGetName(), out output);
+            return _cache.TryGetValue(type, out output);
         }
         
-        public TStorage Get(Type type)
+        private void ShouldBuildCache(bool force = false)
         {
-            ShouldBuildCache();
-            return _cache[type.SafeGetName()];
-        }
-        
-        public void ShouldBuildCache(bool force = false)
-        {
-            if (_cache == null || force) BuildCache();
+            if (!_initialized || force) BuildCache();
         }
 
         private void BuildCache()
         {
-            _cache = new Dictionary<string, TStorage>();
-            foreach (var type in TypeExtensions.GetAllTypes(typeof(T)))
+            foreach (var type in TypeExtensions.GetAllTypes(typeof(TSearch)))
             {
-                var storage = new TStorage();
-                if (storage.ShouldCache(type))
+                foreach (var attribute in type.GetCustomAttributes<TStorage>())
                 {
-                    //Debug.Log($"Caching '{type.SafeGetName()}'");
-                    _cache.Add(type.SafeGetName(), storage);
+                    var storage = attribute;
+                    if (_predicate(type, ref storage, out var key))
+                    {
+                        _cache.Add(key, storage);
+                    }
                 }
             }
+
+            _initialized = true;
         }
     }
 }

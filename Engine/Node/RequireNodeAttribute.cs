@@ -7,8 +7,8 @@ namespace RedOwl.Sleipnir.Engine
     /// Required node for a given Graph.
     /// Will automatically instantiate the node when the graph is first created.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
-    public class RequireNodeAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+    public sealed class RequireNodeAttribute : Attribute
     {
         public Type Type { get; set; }
         public Vector2 Position { get; set; }
