@@ -29,8 +29,8 @@ namespace RedOwl.Sleipnir.Engine
                     Output.Value = Left.Value * Right.Value;
                     break;
                 case Operation.Divide:
-                    // TODO: protect against / by 0
-                    Output.Value = Left.Value / Right.Value;
+                    var rhs = Right.Value;
+                    Output.Value = Left.Value / rhs == 0 ? 1 : rhs;
                     break;
             }
         }
