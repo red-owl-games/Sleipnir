@@ -153,7 +153,7 @@ namespace RedOwl.Sleipnir.Engine
                     }
                     foreach (var input in Graph.FlowOutConnections.SafeGet(Id))
                     {
-                        var nextNode = (IFlowNode)Graph.GetNode(input.Node);
+                        var nextNode = Graph.GetNode(input.Node);
                         var nextPort = nextNode?.FlowInPorts[input.Port];
                         if (nextNode != null && nextPort != null)
                         {

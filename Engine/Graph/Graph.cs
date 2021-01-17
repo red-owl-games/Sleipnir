@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace RedOwl.Sleipnir.Engine
 {
-    public interface IGraph : IFlowNode
+    public interface IGraph : INode
     {
         IEnumerable<INode> Nodes { get; }
         int NodeCount { get; }
@@ -98,7 +98,7 @@ namespace RedOwl.Sleipnir.Engine
         {
             foreach (var node in _nodes)
             {
-                if (node is IFlowNode flowNode) flowNode.Initialize(ref flow);
+                node.Initialize(ref flow);
             }
         }
 
@@ -125,14 +125,7 @@ namespace RedOwl.Sleipnir.Engine
         public T Add<T>(T node) where T : INode
         {
             _nodes.Add(node);
-            if (node is IFlowNode flowNode)
-            {
-                flowNode.Definition(this);
-            }
-            else
-            {
-                node.Definition(this);
-            }
+            node.Definition(this);
             return node;
         }
 
@@ -175,8 +168,7 @@ namespace RedOwl.Sleipnir.Engine
 
         private void CleanupFlowPortConnections(INode target)
         {
-            if (!(target is IFlowNode targetFlowNode)) return;
-            foreach (var port in targetFlowNode.FlowOutPorts.Values)
+            foreach (var port in target.FlowOutPorts.Values)
             {
                 FlowOutConnections.Remove(port.Id);
             }
@@ -225,11 +217,11 @@ namespace RedOwl.Sleipnir.Engine
             }
         }
         
-        public static IEnumerable<IFlowNode> GetRootNodes(this IGraph graph)
+        public static IEnumerable<INode> GetRootNodes(this IGraph graph)
         {
             foreach (var node in graph.Nodes)
             {
-                if (node is IFlowNode flowNode && flowNode.IsFlowRoot) yield return flowNode;
+                if (node.IsFlowRoot) yield return node;
             }
         }
     }

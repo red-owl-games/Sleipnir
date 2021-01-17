@@ -96,7 +96,7 @@ namespace RedOwl.Sleipnir.Editor
             {
                 var view = _nodeViewCache[node.NodeId];
                 CreateValueConnections(view, node);
-                if (node is IFlowNode flowNode) CreateFlowConnections(view, flowNode);
+                CreateFlowConnections(view, node);
             }
         }
         
@@ -115,7 +115,7 @@ namespace RedOwl.Sleipnir.Editor
             }
         }
 
-        private void CreateFlowConnections(INodeView view, IFlowNode flowNode)
+        private void CreateFlowConnections(INodeView view, INode flowNode)
         {
             foreach (var flowOut in flowNode.FlowOutPorts.Values)
             {

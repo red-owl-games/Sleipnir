@@ -23,16 +23,16 @@ namespace RedOwl.Sleipnir.Engine
     {
         public IGraph Graph { get; }
 
-        private readonly IFlowNode[] rootNodes;
+        private readonly INode[] rootNodes;
         public IEnumerable<INode> RootNodes => rootNodes;
 
         public Flow(IGraph graph)
         {
             Graph = graph;
-            rootNodes = new List<IFlowNode>(graph.GetRootNodes()).ToArray();
+            rootNodes = graph.GetRootNodes() as INode[];
         }
         
-        public Flow(IGraph graph, params IFlowNode[] nodes)
+        public Flow(IGraph graph, params INode[] nodes)
         {
             Graph = graph;
             rootNodes = nodes;
@@ -97,12 +97,9 @@ namespace RedOwl.Sleipnir.Engine
         private void WalkFlowPorts(INode node)
         {
             WalkValuePorts(node);
-            if (node is IFlowNode flowNode)
+            foreach (var port in node.FlowOutPorts.Values)
             {
-                foreach (var port in flowNode.FlowOutPorts.Values)
-                {
-                    WalkFlowPort(port);
-                }
+                WalkFlowPort(port);
             }
         }
         
@@ -152,9 +149,9 @@ namespace RedOwl.Sleipnir.Engine
         #endregion
     }
 
-    public class Flow<T> : Flow where T : IFlowNode
+    public class Flow<T> : Flow where T : INode
     {
-        public Flow(IGraph graph) : base(graph, graph.GetNodes(typeof(T)).Cast<IFlowNode>().ToArray()) {}
+        public Flow(IGraph graph) : base(graph, graph.GetNodes(typeof(T)).ToArray()) {}
     }
     
     // TODO: AsyncFlow<T> ?

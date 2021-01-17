@@ -24,7 +24,6 @@ namespace RedOwl.Sleipnir.Editor
         public NodeAttribute ReflectionData { get; private set; }
 
         public bool IsMoveable => ReflectionData.Moveable;
-        
 
         #region API
         protected virtual void OnInitialize() { }
@@ -55,11 +54,8 @@ namespace RedOwl.Sleipnir.Editor
 
             CreateBody(node);
             CreateFlowPortContainers();
-            if (node is IFlowNode flowNode)
-            {
-                CreateExecuteButton(flowNode);
-                CreateFlowPorts(flowNode);
-            }
+            CreateExecuteButton(node);
+            CreateFlowPorts(node);
             AttachFlowPortContainers();
             CreateValuePorts(node);
             RefreshExpandedState();
@@ -124,14 +120,14 @@ namespace RedOwl.Sleipnir.Editor
             FlowOutPortContainer.AddToClassList("FlowOutPorts");
         }
 
-        private void CreateExecuteButton(IFlowNode node)
+        private void CreateExecuteButton(INode node)
         {
             if (!node.IsFlowRoot) return;
             var button = new Button(() => new Flow(Node.Graph, node).Execute()) {text = "Execute"};
             titleButtonContainer.Add(button);
         }
 
-        private void CreateFlowPorts(IFlowNode node)
+        private void CreateFlowPorts(INode node)
         {
             foreach (var flowPort in node.FlowInPorts.Values)
             {

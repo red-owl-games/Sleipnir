@@ -8,29 +8,23 @@ namespace RedOwl.Sleipnir.Engine
     {
         IGraph Graph { get; }
         string NodeId { get; }
+        bool IsFlowRoot { get; }
         Rect NodeRect { get; set; }
         Vector2 NodePosition { get; set; }
 
         // TODO: Convert to KeyedCollection based on performance hit of using Dictionary.Values - which seems to create a ValueCollection every time?
         Dictionary<string, IValuePort> ValueInPorts { get; }
         Dictionary<string, IValuePort> ValueOutPorts { get; }
-        
-        void Definition(IGraph graph);
-        void MarkDirty();
-    }
-
-    public interface IFlowNode : INode
-    {
-        bool IsFlowRoot { get; }
-        
         Dictionary<string, IFlowPort> FlowInPorts { get; }
         Dictionary<string, IFlowPort> FlowOutPorts { get; }
         
+        void Definition(IGraph graph);
+        void MarkDirty();
         void Initialize(ref IFlow flow);
     }
 
     [Serializable]
-    public abstract class Node : IFlowNode 
+    public abstract class Node : INode 
     {
         public IGraph Graph { get; private set; }
         

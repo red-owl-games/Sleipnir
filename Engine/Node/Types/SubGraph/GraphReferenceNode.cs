@@ -6,7 +6,7 @@ namespace RedOwl.Sleipnir.Engine
 {
     [Serializable]
     [Node("Common", Path = "Common", Tooltip = "Nest a Graph that comes from a Graph Asset")]
-    public class GraphReferenceNode : IFlowNode
+    public class GraphReferenceNode : INode
     {
         [SerializeField, HideInInspector]
         private GraphAsset asset;
@@ -36,6 +36,7 @@ namespace RedOwl.Sleipnir.Engine
 
         public IGraph Graph => Asset.Graph.Graph;
         public string NodeId => Asset.Graph.NodeId;
+        public bool IsFlowRoot => false;
         public Rect NodeRect
         {
             get => Asset.Graph.NodeRect;
@@ -62,18 +63,10 @@ namespace RedOwl.Sleipnir.Engine
 
         public Dictionary<string, IValuePort> ValueInPorts => Asset.Graph.ValueInPorts;
         public Dictionary<string, IValuePort> ValueOutPorts => Asset.Graph.ValueOutPorts;
-        public void Definition(IGraph graph) => Asset.Graph.Definition(graph);
-
-        public void MarkDirty() => Asset.Graph.MarkDirty();
-
-        #endregion
-        
-
-        #region IFlowNode
-
-        public bool IsFlowRoot => false;
         public Dictionary<string, IFlowPort> FlowInPorts => Asset.Graph.FlowInPorts;
         public Dictionary<string, IFlowPort> FlowOutPorts => Asset.Graph.FlowOutPorts;
+        public void Definition(IGraph graph) => Asset.Graph.Definition(graph);
+        public void MarkDirty() => Asset.Graph.MarkDirty();
         public void Initialize(ref IFlow flow) => Asset.Graph.Initialize(ref flow);
 
         #endregion
